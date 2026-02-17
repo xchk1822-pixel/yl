@@ -1,0 +1,719 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <title>Bluefield 餐厅财务管理 系统</title>
+    <script src="https://cdn.sheetjs.com/xlsx-0.20.0/package/dist/xlsx.full.min.js"></script>
+    <style>
+        :root { --primary: #3f51b5; --bg: #f5f7fa; --success: #43a047; --danger: #e53935; --warning: #ffa000; --info: #00acc1; }
+        body { font-family: "Segoe UI", "Microsoft YaHei", sans-serif; background: var(--bg); margin: 0; padding: 15px; color: #333; }
+        .box { background: white; padding: 18px; border-radius: 8px; box-shadow: 0 2px 12px rgba(0,0,0,0.06); margin-bottom: 20px; }
+        .header { background: var(--primary); color: white; padding: 12px 20px; border-radius: 8px; display: flex; justify-content: center; align-items: center; position: relative; margin-bottom: 20px; }
+        #clock { position: absolute; right: 20px; font-size: 14px; }
+        .grid-5 { display: grid; grid-template-columns: repeat(5, 1fr); gap: 12px; margin-bottom: 15px; }
+        .card { padding: 15px; border-radius: 6px; color: white; text-align: center; }
+        .bg-rev { background: var(--success); } .bg-total { background: #546e7a; } .bg-exp { background: var(--danger); } .bg-profit { background: #fb8c00; } .bg-debt { background: #1e88e5; }
+        .val-big { font-size: 20px; font-weight: bold; margin: 5px 0; }
+        .val-small { font-size: 11px; opacity: 0.85; border-top: 1px solid rgba(255,255,255,0.2); padding-top: 5px; }
+        .main-layout { display: grid; grid-template-columns: 350px 1fr; gap: 20px; }
+        input, select, button { width: 100%; padding: 10px; margin: 5px 0 10px 0; border: 1px solid #ddd; border-radius: 4px; box-sizing: border-box; font-size: 13px; }
+        button { background: var(--primary); color: white; border: none; cursor: pointer; font-weight: bold; }
+        table { width: 100%; border-collapse: collapse; background: white; margin-top: 10px; table-layout: fixed; }
+        th, td { border: 1px solid #eee; padding: 8px 10px; text-align: left; font-size: 13px; word-break: break-all; }
+        th { background: #f8f9fa; color: #666; }
+        .calendar-grid { display: grid; grid-template-columns: repeat(7, 1fr); gap: 4px; margin-top: 10px; }
+        .cal-day { border: 1px solid #eee; padding: 5px 2px; text-align: center; border-radius: 4px; font-size: 11px; background: #fff; min-height: 40px;}
+        .cal-day.has-data { background: #e8f5e9; border-color: #c8e6c9; }
+        .tag-box { display: flex; flex-direction: column; gap: 5px; margin-bottom: 10px; }
+        .tag { background: #eceff1; padding: 4px 8px; border-radius: 4px; font-size: 12px; display: flex; align-items: center; gap: 5px; justify-content: space-between;}
+        .tag b { color: #e53935; cursor: pointer; font-size: 16px; }
+        .move-btn { cursor: pointer; color: var(--primary); font-weight: bold; padding: 0 3px; font-size: 14px; }
+        .batch-row { display: flex; gap: 5px; align-items: center; margin-bottom: 5px; }
+        .search-bar { background: #e8eaf6; padding: 15px; border-radius: 8px; display: flex; gap: 10px; align-items: flex-end; margin-bottom: 15px; }
+        #img-modal { display:none; position:fixed; top:0; left:0; width:100%; height:100%; background:rgba(0,0,0,0.85); z-index:1000; justify-content:center; align-items:center; }
+        #img-modal img { max-width:90%; max-height:90%; border:3px solid white; }
+        .sub-row { background: #fafafa; font-size: 12px; color: #777; }
+        .capture-area { border: 2px dashed #ccc; padding: 10px; margin: 10px 0; display: none; text-align: center; }
+        video { width: 100%; border-radius: 4px; background: #000; }
+
+        .txt-rev-line { color: #2e7d32; font-weight: bold; border-bottom: 1px solid #f0f0f0; padding-bottom: 2px; margin-bottom: 2px; display: block; }
+        .txt-exp-line { color: #d32f2f; font-size: 12px; display: block; }
+
+        @media print {
+            .no-print, aside, .header, .grid-5, .search-bar, .tag-box, button { display: none !important; }
+            body { background: white; padding: 0; margin: 0; font-size: 10px; }
+            .main-layout { display: block; }
+            .box { box-shadow: none; border: 1px solid #000; margin-bottom: 10px; padding: 5px; border-radius: 0; }
+            table { font-size: 10px; margin-top: 5px; }
+            th, td { padding: 3px 5px; border: 1px solid #333; color: #000 !important; }
+            .card, .bg-rev, .bg-total, .bg-exp, .bg-profit, .bg-debt { color: #000; background: none; border: 1px solid #ccc; }
+        }
+    </style>
+</head>
+<body onload="init()">
+
+<div id="img-modal" onclick="this.style.display='none'"><img id="modal-content"></div>
+
+<div class="header no-print">
+    <h2 style="margin:0; font-size: 18px;">Bluefield 餐厅财务管理系统 </h2>
+    <div id="clock"></div>
+</div>
+
+<div class="grid-5 no-print">
+    <div class="card bg-total"><div>累计营业总额</div><div class="val-big" id="h-all-rev">C$ 0</div><div class="val-small">所有单据总和</div></div>
+    <div class="card bg-rev"><div>区间营收总计</div><div class="val-big" id="h-mon-rev">C$ 0</div><div class="val-small" id="h-pos-info">现 C$ 0 | PO C$ 0</div></div>    <div class="card bg-exp"><div>区间累计支出</div><div class="val-big" id="h-mon-exp">C$ 0</div><div class="val-small">仅包含营业支出及还款</div></div>
+    <div class="card bg-profit"><div>区间总盈亏</div><div class="val-big" id="h-profit">C$ 0</div><div class="val-small" style="color:#fff">总额 - 支出 + 误差</div></div>
+    <div class="card bg-debt"><div>应付总欠款</div><div class="val-big" id="h-debt">C$ 0</div><div class="val-small" style="color:#ffeb3b">供应商待结总额</div></div>
+</div>
+
+<div class="main-layout">
+    <aside class="no-print">
+        <div class="box">
+    <b style="font-size:14px; color:var(--primary);">🗓️ 月度日历</b>
+    <input type="month" id="cal-picker" onchange="render()">
+    
+    <div class="calendar-grid" style="font-weight:bold; background:#e8eaf6; border-radius:4px; margin-bottom:5px; min-height:auto; text-align:center;">
+        <div style="color:var(--danger); padding:5px 0;">日</div>
+        <div style="padding:5px 0;">一</div>
+        <div style="padding:5px 0;">二</div>
+        <div style="padding:5px 0;">三</div>
+        <div style="padding:5px 0;">四</div>
+        <div style="padding:5px 0;">五</div>
+        <div style="color:var(--danger); padding:5px 0;">六</div>
+    </div>
+    
+    <div id="calendar" class="calendar-grid"></div>
+</div>
+        <div class="box">
+            <b style="font-size:14px;">数据录入与模块切换</b>
+            <select id="main-mode" onchange="switchForm()">
+                <option value="shift">🏮 每日交班结转 (小票模式)</option>
+                <option value="debt">📊 供应商账目 (挂账/还款)</option>
+                <option value="staff">👤 员工薪资/借款录入</option>
+            </select>
+            <hr>
+            
+            <div id="capture-container" class="capture-area">
+                <video id="video" autoplay muted></video>
+                <button onclick="takeScreenshot()" style="background:var(--danger); margin-top:5px;">确认截取当前画面</button>
+                <button onclick="closeCapture()" style="background:#666;">取消</button>
+            </div>
+
+            <form id="shiftForm">
+                <input type="date" id="in-date" required>
+                <input type="number" id="in-total-sales" step="0.01" placeholder="VENTAS (小票总额)" required oninput="calcShift()">
+                <input type="number" id="in-pos-sales" step="0.01" placeholder="POS (刷卡)" required oninput="calcShift()">
+                <input type="number" id="in-diff" step="0.01" placeholder="Dif (误差)" oninput="calcShift()">
+                <div id="exp-rows"></div>
+                <button type="button" onclick="addExpRow()" style="background:#90a4ae; font-size:11px; padding:6px;">+ 增加支出项</button>
+                <div id="shift-preview" style="background:#fff3e0; padding:10px; border-radius:4px; margin:10px 0; font-size:12px;">等待录入...</div>
+                <div style="display:flex; gap:5px;">
+                    <input type="file" id="in-file-shift" accept="image/*">
+                    <button type="button" onclick="startCapture('in-file-shift')" style="width:80px; background:var(--info); font-size:11px;">🖥️ 截图</button>
+                </div>
+                <button type="submit" style="background:var(--success)">保存交班</button>
+            </form>
+
+            <form id="debtForm" style="display:none;">
+                <input type="date" id="debt-date">
+                <select id="sel-sup"></select>
+                <input type="text" id="in-bill" placeholder="单号" required>
+                <select id="in-action" onchange="toggleDebtHelper()"><option value="buy">挂账采购</option><option value="pay">还款支付</option></select>
+                <div id="debt-helper" style="background:#f5f5f5; padding:8px; border-radius:4px; margin:5px 0;">
+                    <div id="debt-tag-rows"></div>
+                    <button type="button" onclick="addDebtTagRow()" style="background:#ffb74d; font-size:10px; padding:2px; color:#333;">+ 增加汇总项</button>
+                </div>
+                <input type="number" id="debt-amt" step="0.01" placeholder="总金额" required>
+                <div style="display:flex; gap:5px;">
+                    <input type="file" id="in-file-debt" accept="image/*">
+                    <button type="button" onclick="startCapture('in-file-debt')" style="width:80px; background:var(--info); font-size:11px;">🖥️ 截图</button>
+                </div>
+                <button type="submit" style="background:var(--info)">保存单据</button>
+            </form>
+
+            <form id="staffForm" style="display:none;">
+                <input type="date" id="staff-date">
+                <select id="sel-staff"></select>
+                <select id="staff-type"><option value="salary">发放工资</option><option value="loan">员工借款</option></select>
+                <input type="number" id="staff-amt" step="0.01" placeholder="金额" required>
+                <input type="text" id="staff-notes" placeholder="备注">
+                <div style="display:flex; gap:5px;">
+                    <input type="file" id="in-file-staff" accept="image/*">
+                    <button type="button" onclick="startCapture('in-file-staff')" style="width:80px; background:var(--info); font-size:11px;">🖥️ 截图</button>
+                </div>
+                <button type="submit" style="background:var(--warning); color:#333;">保存员工记录</button>
+            </form>
+        </div>
+
+        <div class="box no-print">
+            <b style="font-size:13px;">⚙️ 配置管理</b>
+            <div style="margin-top:10px;"><small>👥 员工</small></div>
+            <div id="list-staff" class="tag-box"></div>
+            <button onclick="addSetting('staff')" style="font-size:10px; background:#fb8c00; padding:4px;">+ 员工</button>
+            <hr>
+            <div><small>🚛 供应商</small></div>
+            <div id="list-sup" class="tag-box"></div>
+            <button onclick="addSetting('sup')" style="font-size:10px; background:#607d8b; padding:4px;">+ 供应商</button>
+            <hr>
+            <div><small>📂 支出/货品分类 (可调顺序)</small></div>
+            <div id="list-cat" class="tag-box" style="max-height: 250px; overflow-y: auto; border: 1px solid #eee; padding: 5px;"></div>
+            <button onclick="addParentCat()" style="font-size:10px; background:var(--primary); padding:4px;">+ 新增大类</button>
+            <hr>
+            <button onclick="exportBackup()" style="background:#673ab7; margin-bottom:5px;">💾 导出全量数据包</button>
+<button onclick="importBackup()" style="background:#607d8b; margin-bottom:15px;">📥 导入全量数据包</button>
+<button onclick="exportExcel()" style="background:#2e7d32;">导出Excel表格</button>
+        </div>
+    </aside>
+
+    <main>
+        <div class="search-bar no-print">
+            <div style="flex:1;"><input type="date" id="f-start" onchange="render()"></div>
+            <div style="flex:1;"><input type="date" id="f-end" onchange="render()"></div>
+            <div style="flex:2;"><input type="text" id="f-key" placeholder="输入名称或关键字查询..." oninput="render()"></div>
+            <button onclick="window.print()" style="width:80px; background:#607d8b;">打印</button>
+        </div>
+
+        <div id="view-shift">
+            <div class="box">
+                <b style="color:var(--success); font-size:15px;">📊 营业统计汇总</b>
+                <div style="display: flex; gap: 20px; margin-top:10px;">
+                    <div style="flex: 1;">
+                        <table>
+                            <thead><tr><th>营收类型</th><th>金额</th></tr></thead>
+                            <tbody id="revTbody"></tbody>
+                        </table>
+                        <b style="color:#e65100; font-size:13px; margin-top:15px; display:block;">🔍 内部货品参考汇总</b>
+                        <table>
+                            <thead><tr><th>货品</th><th>汇总额</th></tr></thead>
+                            <tbody id="itemTbody"></tbody>
+                        </table>
+                    </div>
+                    <div style="flex: 1.5;">
+                        <table>
+                            <thead><tr><th>支出明细汇总</th><th>金额</th><th>占比</th></tr></thead>
+                            <tbody id="expTbody"></tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div id="view-debt" style="display:none;">
+            <div class="box">
+                <b style="color:var(--primary); font-size:15px;">🚛 供应商对账明细 (按单据号归类)</b>
+                <table>
+                    <thead><tr><th style="width:25%">供应商</th><th style="width:20%">单据号</th><th>应付额</th><th>已付额</th><th style="width:20%">剩余欠款</th></tr></thead>
+                    <tbody id="billTbody"></tbody>
+                </table>
+            </div>
+        </div>
+
+        <div id="view-staff" style="display:none;">
+            <div class="box">
+                <b style="color:var(--warning); font-size:15px;">👤 员工薪资/借款汇总统计 (全员及明细)</b>
+                <table>
+                    <thead><tr><th>员工姓名</th><th>期间应发工资</th><th>期间累计借款</th><th style="background:#fff3e0">实补差额(应付)</th></tr></thead>
+                    <tbody id="staffTbody"></tbody>
+                </table>
+            </div>
+        </div>
+
+        <div class="box">
+            <b id="list-title">📑 业务流水明细</b>
+            <table>
+                <thead>
+                    <tr>
+                        <th style="width:90px">日期</th>
+                        <th style="width:50px">类型</th>
+                        <th>明细详情 (上收下支)</th>
+                        <th style="width:90px">总金额</th>
+                        <th class="no-print" style="width:40px">凭证</th>
+                        <th class="no-print" style="width:40px">操作</th>
+                    </tr>
+                </thead>
+                <tbody id="tbody"></tbody>
+            </table>
+        </div>
+    </main>
+</div>
+
+<script>
+    const STORAGE_KEY = "BF_DB_V1299";
+    let db = { recs: [], cats: {"肉类":["鸡肉","牛肉"],"外卖":["外卖"],"杂费":["其他"]}, sups: ['默认供应商'], staffs: ['默认员工'], catOrder: ["肉类","外卖","杂费"] };
+    const CUR = "C$ ";
+    let currentTargetInputId = "";
+    let capturedImgData = null;
+
+    function resetInputsToToday() {
+        const d = new Date().toISOString().split('T')[0];
+        document.getElementById('cal-picker').value = d.substring(0,7);
+        document.getElementById('in-date').value = d;
+        document.getElementById('debt-date').value = d;
+        document.getElementById('staff-date').value = d;
+        capturedImgData = null; 
+    }
+
+    function init() {
+        const saved = localStorage.getItem(STORAGE_KEY);
+        if (saved) { try { let parsed = JSON.parse(saved); if (parsed) { db = parsed; if(!db.catOrder) db.catOrder = Object.keys(db.cats); } } catch(e) {} }
+        resetInputsToToday();
+        const d = new Date().toISOString().split('T')[0];
+        document.getElementById('f-start').value = d.substring(0,8)+'01';
+        document.getElementById('f-end').value = d;
+        addExpRow(); render();
+        setInterval(() => { const now = new Date(); document.getElementById('clock').innerText = now.toLocaleString(); }, 1000);
+    }
+
+    async function startCapture(inputId) {
+        currentTargetInputId = inputId; const container = document.getElementById('capture-container'); const video = document.getElementById('video'); container.style.display = 'block';
+        try { const stream = await navigator.mediaDevices.getDisplayMedia({ video: true, audio: false }); video.srcObject = stream; } catch (err) { alert("无法获取权限"); container.style.display = 'none'; }
+    }
+    function closeCapture() { const video = document.getElementById('video'); if (video.srcObject) { video.srcObject.getTracks().forEach(track => track.stop()); } document.getElementById('capture-container').style.display = 'none'; }
+    function takeScreenshot() { const video = document.getElementById('video'); const canvas = document.createElement('canvas'); canvas.width = 1280; canvas.height = (video.videoHeight / video.videoWidth) * 1280; const ctx = canvas.getContext('2d'); ctx.drawImage(video, 0, 0, canvas.width, canvas.height); capturedImgData = canvas.toDataURL('image/jpeg', 0.6); closeCapture(); alert("🖥️ 截图已就绪"); }
+
+    function forceSave(newRec) { db.recs.push(newRec); render(); alert("✅ 保存成功"); }
+
+    function switchForm() {
+        const mode = document.getElementById('main-mode').value;
+        document.getElementById('shiftForm').style.display = (mode === 'shift' ? 'block' : 'none');
+        document.getElementById('debtForm').style.display = (mode === 'debt' ? 'block' : 'none');
+        document.getElementById('staffForm').style.display = (mode === 'staff' ? 'block' : 'none');
+        document.getElementById('view-shift').style.display = (mode === 'shift' ? 'block' : 'none');
+        document.getElementById('view-debt').style.display = (mode === 'debt' ? 'block' : 'none');
+        document.getElementById('view-staff').style.display = (mode === 'staff' ? 'block' : 'none');
+        render();
+    }
+
+    function render() {
+        localStorage.setItem(STORAGE_KEY, JSON.stringify(db));
+        const mode = document.getElementById('main-mode').value;
+        const fS = document.getElementById('f-start').value, fE = document.getElementById('f-end').value, fK = document.getElementById('f-key').value.toLowerCase();
+        
+        document.getElementById('list-sup').innerHTML = db.sups.map((s,i)=>`<div class="tag">${s}<b onclick="delSet('sup',${i})">×</b></div>`).join('');
+        document.getElementById('sel-sup').innerHTML = db.sups.map(s=>`<option>${s}</option>`).join('');
+        document.getElementById('list-staff').innerHTML = db.staffs.map((s,i)=>`<div class="tag">${s}<b onclick="delSet('staff',${i})">×</b></div>`).join('');
+        document.getElementById('sel-staff').innerHTML = db.staffs.map(s=>`<option>${s}</option>`).join('');
+        
+        let catH = "";
+
+        db.catOrder.forEach((p, pi) => {
+            // --- 大类渲染修改 ---
+            catH += `<div style="font-weight:bold; font-size:12px; margin-top:8px; color:#3f51b5; display:flex; justify-content:space-between; align-items:center;">
+                        <span>
+                            <span contenteditable="true" 
+                                  onblur="renameParentCat('${p}', this.innerText)" 
+                                  onkeydown="if(event.keyCode==13){event.preventDefault();this.blur();}"
+                                  style="border-bottom:1px dashed #3f51b5; cursor:text; padding:0 3px;">${p}</span>
+                            <small onclick="addChildCat('${p}')" style="cursor:pointer; color:green; margin-left:5px;">[+]</small>
+                        </span>
+                        <span>
+                            <span class="move-btn" onclick="moveParent(${pi},-1)">↑</span>
+                            <span class="move-btn" onclick="moveParent(${pi},1)">↓</span>
+                            <small onclick="delParentCat('${p}')" style="cursor:pointer; color:red; margin-left:5px;">[×]</small>
+                        </span>
+                    </div>`;
+            
+            if(db.cats[p]) db.cats[p].forEach((c, ci) => { 
+                // --- 小类渲染修改 ---
+                catH += `<div class="tag" style="margin-left:10px;">
+                            <span contenteditable="true" 
+                                  onblur="renameChildCat('${p}', '${c}', this.innerText)"
+                                  onkeydown="if(event.keyCode==13){event.preventDefault();this.blur();}"
+                                  style="cursor:text; min-width:30px; display:inline-block;">${c}</span>
+                            <span>
+                                <span class="move-btn" style="font-size:10px" onclick="moveChild('${p}',${ci},-1)">↑</span>
+                                <span class="move-btn" style="font-size:10px" onclick="moveChild('${p}',${ci},1)">↓</span>
+                                <b onclick="delChildCat('${p}',${ci})">×</b>
+                            </span>
+                        </div>`; 
+            });
+        });       document.getElementById('list-cat').innerHTML = catH;
+
+        let stats = { mCash:0, mPos:0, mExp:0, mSales:0, aSales:0, tDebt:0, mDiff:0 };
+        let calData = {}, expAgg = {}, itemAgg = {}, staffSummary = {}, billAgg = {};
+        db.staffs.forEach(s => staffSummary[s] = {sal:0, loan:0});
+
+        db.recs.forEach(r => {
+            if(r.type === 'buy') stats.tDebt += (r.amt||0);
+            if(r.type === 'pay') stats.tDebt -= (r.amt||0);
+            if(r.type === 'day-sum') stats.aSales += (r.totalSales||0);
+            const inDate = (r.date >= fS && r.date <= fE);
+            if(inDate) {
+                const isDebtModule = (r.type === 'buy' || r.type === 'pay');
+                const isMatch = !fK || (isDebtModule ? (r.sup && r.sup.toLowerCase() === fK) : JSON.stringify(r).toLowerCase().includes(fK));
+                
+                if(isDebtModule && isMatch) {
+                    const bKey = `${r.sup}_${r.bill || '无单号'}`;
+                    if(!billAgg[bKey]) billAgg[bKey] = { sup: r.sup, bill: r.bill || '无单号', buy: 0, pay: 0 };
+                    if(r.type === 'buy') billAgg[bKey].buy += (r.amt||0);
+                    if(r.type === 'pay') billAgg[bKey].pay += (r.amt||0);
+                }
+                
+                if(r.type === 'salary' && staffSummary[r.staff]) staffSummary[r.staff].sal += (r.amt||0); 
+                else if(r.type === 'loan' && staffSummary[r.staff]) staffSummary[r.staff].loan += (r.amt||0);
+                
+                if(r.type === 'day-sum') {
+                    stats.mCash += (r.cash||0); stats.mPos += (r.pos||0); stats.mSales += (r.totalSales||0); stats.mDiff += (r.diff||0);
+                    if(r.expDetails) r.expDetails.forEach(ed => { stats.mExp += ed.amt; expAgg[ed.cat] = (expAgg[ed.cat]||0)+ed.amt; let iname = ed.cat.split(':')[1]; itemAgg[iname] = (itemAgg[iname]||0)+ed.amt; });
+                } else if(r.type === 'pay') { 
+                    stats.mExp += (r.amt||0); 
+                    expAgg['还款:供应商'] = (expAgg['还款:供应商']||0)+(r.amt||0); 
+                }
+            }
+            if(inDate && r.type==='day-sum' && r.date.startsWith(document.getElementById('cal-picker').value)) calData[r.date] = (calData[r.date]||0)+(r.totalSales||0);
+        });
+
+        document.getElementById('billTbody').innerHTML = Object.values(billAgg).map(b => `<tr><td>${b.sup}</td><td>${b.bill}</td><td>${CUR}${b.buy.toFixed(1)}</td><td>${CUR}${b.pay.toFixed(1)}</td><td style="color:${(b.buy-b.pay)>0?'red':'green'}">${CUR}${(b.buy-b.pay).toFixed(1)}</td></tr>`).join('');
+        const currentProfit = stats.mSales - stats.mExp + stats.mDiff;
+        document.getElementById('h-all-rev').innerText = CUR + stats.aSales.toFixed(0);
+        // 大数字显示：现金 + POS 的总和
+document.getElementById('h-mon-rev').innerText = CUR + (stats.mCash + stats.mPos).toFixed(1);
+// 小文字依然保留明细
+   // 使用 innerHTML 替换 innerText，并给文字加上红色样式
+document.getElementById('h-pos-info').innerHTML = `<span style="color:#ffeb3b">现 ${CUR}${stats.mCash.toFixed(1)}</span> | <span style="color:#ffeb3b">PO ${CUR}${stats.mPos.toFixed(1)}</span>`;     document.getElementById('h-mon-exp').innerText = CUR + stats.mExp.toFixed(1);
+        document.getElementById('h-profit').innerText = CUR + currentProfit.toFixed(1);
+        document.getElementById('h-debt').innerText = CUR + stats.tDebt.toFixed(1);
+
+        document.getElementById('revTbody').innerHTML = `<tr><td>小票总额</td><td>${CUR}${stats.mSales.toFixed(1)}</td></tr><tr><td>现金实收</td><td>${CUR}${stats.mCash.toFixed(1)}</td></tr><tr><td>刷卡(POS)</td><td>${CUR}${stats.mPos.toFixed(1)}</td></tr><tr style="color:orange"><td>误差值</td><td>${CUR}${stats.mDiff.toFixed(1)}</td></tr><tr style="font-weight:bold; border-top:2px solid #eee;"><td>模块盈亏</td><td style="color:${currentProfit>=0?'green':'red'}">${CUR}${currentProfit.toFixed(1)}</td></tr>`;
+       document.getElementById('itemTbody').innerHTML = Object.entries(itemAgg)
+    .sort((a, b) => b[1] - a[1]) 
+    .map(([k,v])=>`<tr><td>${k}</td><td>${CUR}${v.toFixed(1)}</td></tr>`)
+    .join('');
+     // 1. 先计算每个大类的总金额并存入数组
+        let sortedCats = db.catOrder.map(p => {
+            let pA = 0;
+            Object.entries(expAgg).forEach(([k, v]) => { if (k.startsWith(p + ':')) pA += v; });
+            return { name: p, total: pA };
+        })
+        .filter(item => item.total > 0) // 只保留有支出的类目
+        .sort((a, b) => b.total - a.total); // 按金额从大到小排序
+
+          // 2. 根据排序后的数组生成 HTML（新增了子类内部排序逻辑）
+        let eH = ""; 
+        sortedCats.forEach(cat => {
+            const p = cat.name;
+            const pA = cat.total;
+            // 渲染大类行
+            eH += `<tr style="background:#f9f9f9;font-weight:bold"><td>${p}</td><td>${CUR}${pA.toFixed(1)}</td><td>${(pA/(stats.mExp||1)*100).toFixed(1)}%</td></tr>`; 
+            
+            // --- 修改点：这里先提取该大类下所有小类到数组中 ---
+            let subList = [];
+            Object.entries(expAgg).forEach(([k, v]) => {
+                if (k.startsWith(p + ':')) {
+                    subList.push({ name: k.split(':')[1], val: v });
+                }
+            });
+
+            // --- 修改点：在这里对小类按金额从大到小排序 ---
+            subList.sort((a, b) => b.val - a.val);
+
+            // --- 修改点：按照排序后的顺序渲染小类 ---
+            subList.forEach(item => {
+                eH += `<tr class="sub-row"><td>└ ${item.name}</td><td>${CUR}${item.val.toFixed(1)}</td><td></td></tr>`;
+            });
+        });
+        document.getElementById('expTbody').innerHTML = eH; 
+        
+        let staffRows = "", totalSal = 0, totalLoan = 0;
+        Object.entries(staffSummary).forEach(([name, val]) => {
+            totalSal += val.sal; totalLoan += val.loan;
+            staffRows += `<tr><td>${name}</td><td>${CUR}${val.sal.toFixed(1)}</td><td>${CUR}${val.loan.toFixed(1)}</td><td>${CUR}${(val.sal-val.loan).toFixed(1)}</td></tr>`;
+        });
+        staffRows = `<tr style="background:#fff9c4; font-weight:bold; border-bottom: 2px solid #fb8c00;"><td>🌟 全员合计</td><td>${CUR}${totalSal.toFixed(1)}</td><td>${CUR}${totalLoan.toFixed(1)}</td><td style="color:#e65100">${CUR}${(totalSal-totalLoan).toFixed(1)}</td></tr>` + staffRows;
+        document.getElementById('staffTbody').innerHTML = staffRows;
+
+        const filtered = db.recs.filter(r => {
+            const inDate = (r.date >= fS && r.date <= fE);
+            const isDebtModule = (r.type === 'buy' || r.type === 'pay');
+            const inKey = !fK || (isDebtModule ? (r.sup && r.sup.toLowerCase() === fK) : JSON.stringify(r).toLowerCase().includes(fK));
+            
+            let inMode = (mode === 'shift' && r.type === 'day-sum') || (mode === 'debt' && isDebtModule) || (mode === 'staff' && (r.type === 'salary' || r.type === 'loan'));
+            return inDate && inKey && inMode;
+        });
+
+        document.getElementById('tbody').innerHTML = filtered.sort((a,b)=>b.date.localeCompare(a.date)||b.id-a.id).map(r => {
+            let typeLabel = {'day-sum':'收支','buy':'挂账','pay':'还款','salary':'工资','loan':'借款'}[r.type];
+            let detailHtml = "";
+          if (r.type === 'day-sum') {
+    // 将 营收、现金、POS、误差 整合在这一行
+    detailHtml = `<span class="txt-rev-line" style="color:#1a237e;">收: 营收${CUR}${r.totalSales.toFixed(1)} | 现金${CUR}${r.cash.toFixed(1)} | POS${CUR}${r.pos.toFixed(1)} ${r.diff ? `<small style="color:#ffa000; font-weight:normal;"> (误:${r.diff.toFixed(1)})</small>` : ''}</span>`;
+    // 支出明细保持不变
+    if(r.expDetails && r.expDetails.length > 0) detailHtml += `<span class="txt-exp-line">支: ${r.expDetails.map(ed => `${ed.cat.split(':')[1]}${CUR}${ed.amt}`).join(', ')}</span>`;
+} else if (r.type === 'buy') {
+                detailHtml = `[${r.sup}] ${r.itemDetails ? r.itemDetails.map(i=>i.name+CUR+i.amt).join(',') : '采购挂账'}`;
+            } else if (r.type === 'pay') {
+                detailHtml = `[${r.sup || '供应商'}] 还款支付`;
+            } else {
+                detailHtml = `<b>${r.staff}</b> ${r.notes ? `(${r.notes})` : ''}`;
+            }
+            if(r.bill) detailHtml += ` <small style="color:#999">(单:${r.bill})</small>`;
+
+            return `<tr>
+                <td>${r.date}</td><td>${typeLabel}</td><td style="padding:4px 8px">${detailHtml}</td>
+                   <td style="font-weight:bold">${CUR}${(r.type==='day-sum' ? (r.cash + r.pos) : (r.amt||0)).toFixed(1)}</td>             <td class="no-print">${r.img?`<button onclick="showImg('${r.img}')" style="padding:2px 5px">图</button>`:'-'}</td>
+                <td class="no-print"><button onclick="delRec(${r.id})" style="background:#ffcdd2;color:#b71c1c;padding:2px 5px">删</button></td>
+            </tr>`;
+        }).join('');
+        renderCalendar(document.getElementById('cal-picker').value, calData);
+    }
+
+    function renderCalendar(monStr, data) {
+    const cal = document.getElementById('calendar'); 
+    cal.innerHTML = "";
+    const [y, m] = monStr.split('-').map(Number); 
+    
+    // 获取当月第一天是星期几
+    const firstDay = new Date(y, m-1, 1).getDay(); 
+    const daysInMonth = new Date(y, m, 0).getDate();
+    
+    // 1. 填充第一天之前的空白格子，使日期与星期对齐
+    for(let i=0; i<firstDay; i++) {
+        cal.innerHTML += '<div></div>';
+    }
+    
+    // 2. 循环生成每一天的格子
+    for(let d=1; d<=daysInMonth; d++) {
+        const ds = `${y}-${String(m).padStart(2,'0')}-${String(d).padStart(2,'0')}`;
+        const val = data[ds] || 0;
+        
+        cal.innerHTML += `
+            <div class="cal-day ${val?'has-data':''}" onclick="document.getElementById('f-start').value='${ds}';document.getElementById('f-end').value='${ds}';render();">
+                <b>${d}</b><br>
+                <small style="color:#666">${val?CUR+val.toFixed(0):''}</small>
+            </div>`;
+    }
+}
+    async function getImg(fileInput) { if(capturedImgData) return capturedImgData; const file = fileInput.files[0]; if(!file) return null; return new Promise((res) => { const reader = new FileReader(); reader.onload = () => res(reader.result); reader.readAsDataURL(file); }); }
+    function showImg(src) { document.getElementById('modal-content').src = src; document.getElementById('img-modal').style.display='flex'; }
+    function delRec(id) { if(confirm('确定删除？')) { db.recs = db.recs.filter(r=>r.id!==id); render(); } }
+    function delSet(key, i) { const k = key==='sup'?'sups':'staffs'; db[k].splice(i,1); render(); }
+    function addSetting(key) { const v = prompt("输入名称:"); if(v) { const k = key==='sup'?'sups':'staffs'; db[k].push(v); render(); } }
+
+    function addParentCat() { 
+        const v = prompt("输入大类名称:"); 
+        if(v && !db.catOrder.includes(v)) { db.catOrder.push(v); db.cats[v] = []; render(); } 
+    }
+
+    function renameParentCat(oldName, newName) {
+        newName = newName.trim();
+        if (!newName || oldName === newName) { render(); return; }
+        if (db.catOrder.includes(newName)) { alert("该名称已存在"); render(); return; }
+        db.cats[newName] = db.cats[oldName];
+        delete db.cats[oldName];
+        const idx = db.catOrder.indexOf(oldName);
+        if (idx !== -1) db.catOrder[idx] = newName;
+        db.recs.forEach(r => {
+            if (r.expDetails) {
+                r.expDetails.forEach(ed => {
+                    if (ed.cat && ed.cat.startsWith(oldName + ':')) {
+                        ed.cat = ed.cat.replace(oldName + ':', newName + ':');
+                    }
+                });
+            }
+        });
+        render();
+    }
+
+    function renameChildCat(p, oldC, newC) {
+        newC = newC.trim();
+        if (!newC || oldC === newC) { render(); return; }
+        if (db.cats[p].includes(newC)) { alert("该名称已存在"); render(); return; }
+        const idx = db.cats[p].indexOf(oldC);
+        if (idx !== -1) db.cats[p][idx] = newC;
+        const oldFull = p + ":" + oldC;
+        const newFull = p + ":" + newC;
+        db.recs.forEach(r => {
+            if (r.expDetails) {
+                r.expDetails.forEach(ed => {
+                    if (ed.cat === oldFull) ed.cat = newFull;
+                });
+            }
+        });
+        render();
+    }
+
+    function delParentCat(p) { 
+        if(confirm(`确定删除大类 ${p} 及其所有子类？`)) { 
+            db.catOrder = db.catOrder.filter(x => x !== p); delete db.cats[p]; render(); 
+        } 
+    }
+
+    function addChildCat(p) { 
+        const v = prompt(`在大类 [${p}] 下新增子类:`); 
+        if(v) { if(!db.cats[p]) db.cats[p]=[]; db.cats[p].push(v); render(); } 
+    }
+
+    function delChildCat(p, ci) { 
+        db.cats[p].splice(ci,1); render(); 
+    }
+    
+    // 增加大类移动逻辑
+    function moveParent(i, dir) {
+        const target = i + dir;
+        if(target < 0 || target >= db.catOrder.length) return;
+        const temp = db.catOrder[i];
+        db.catOrder[i] = db.catOrder[target];
+        db.catOrder[target] = temp;
+        render();
+    }
+    
+    function moveChild(p, i, dir) {
+        const target = i + dir;
+        if(target < 0 || target >= db.cats[p].length) return;
+        const temp = db.cats[p][i];
+        db.cats[p][i] = db.cats[p][target];
+        db.cats[p][target] = temp;
+        render();
+    }
+
+    function calcShift() {
+        const t = parseFloat(document.getElementById('in-total-sales').value)||0, p = parseFloat(document.getElementById('in-pos-sales').value)||0, df = parseFloat(document.getElementById('in-diff').value)||0;
+        let g = 0; document.querySelectorAll('#exp-rows .exp-amt').forEach(input => g += (parseFloat(input.value)||0));
+        document.getElementById('shift-preview').innerHTML = `现金实收计算: ${t}(总) - ${g}(支) - ${p}(卡) + ${df}(误) = <b>${CUR}${(t-g-p+df).toFixed(1)}</b>`;
+    }
+
+    document.getElementById('shiftForm').onsubmit = async (e) => {
+        e.preventDefault(); const t = parseFloat(document.getElementById('in-total-sales').value)||0, p = parseFloat(document.getElementById('in-pos-sales').value)||0, df = parseFloat(document.getElementById('in-diff').value)||0;
+        let ed = [], g = 0; document.querySelectorAll('#exp-rows .batch-row').forEach(row => { const cat = row.querySelector('.exp-c-cat').value, a = parseFloat(row.querySelector('.exp-amt').value)||0; if(a>0) { ed.push({cat:cat, amt:a}); g+=a; } });
+        const rec = { id:Date.now(), date:document.getElementById('in-date').value, type:'day-sum', totalSales:t, pos:p, diff:df, cash:(t-g-p+df), expDetails:ed };
+        rec.img = await getImg(document.getElementById('in-file-shift')); forceSave(rec); document.getElementById('shiftForm').reset(); resetInputsToToday(); document.getElementById('exp-rows').innerHTML = ""; addExpRow();
+    };
+document.getElementById('debtForm').onsubmit = async (e) => {
+        e.preventDefault(); 
+        let items = []; 
+        document.querySelectorAll('#debt-tag-rows .batch-row').forEach(row => { 
+            const name = row.querySelector('input').value, 
+                  amt = parseFloat(row.querySelectorAll('input')[1].value)||0; 
+            if(name && amt > 0) items.push({name, amt}); 
+        });
+        const rec = { 
+            id: Date.now(), 
+            date: document.getElementById('debt-date').value, 
+            type: document.getElementById('in-action').value, 
+            sup: document.getElementById('sel-sup').value, 
+            bill: document.getElementById('in-bill').value, 
+            amt: parseFloat(document.getElementById('debt-amt').value) || 0, 
+            itemDetails: items 
+        };
+        rec.img = await getImg(document.getElementById('in-file-debt')); 
+        forceSave(rec); 
+        document.getElementById('debtForm').reset(); 
+        document.getElementById('debt-tag-rows').innerHTML = ""; 
+        resetInputsToToday();
+    };
+
+    document.getElementById('staffForm').onsubmit = async (e) => {
+        e.preventDefault();
+        const rec = { 
+            id: Date.now(), 
+            date: document.getElementById('staff-date').value, 
+            type: document.getElementById('staff-type').value, 
+            staff: document.getElementById('sel-staff').value, 
+            amt: parseFloat(document.getElementById('staff-amt').value) || 0, 
+            notes: document.getElementById('staff-notes').value 
+        };
+        rec.img = await getImg(document.getElementById('in-file-staff'));
+        forceSave(rec);
+        document.getElementById('staffForm').reset();
+        resetInputsToToday();
+    };
+
+    // 增加支出项：二级联动逻辑
+    function addExpRow() {
+        const div = document.createElement('div');
+        div.className = 'batch-row';
+        let parentOptions = ""; 
+        db.catOrder.forEach(p => { parentOptions += `<option value="${p}">${p}</option>`; });
+
+        div.innerHTML = `
+            <select class="exp-p-cat" onchange="updateChildSelect(this)" style="flex:1">${parentOptions}</select>
+            <select class="exp-c-cat" style="flex:1"></select>
+            <input type="number" class="exp-amt" step="0.01" placeholder="金额" oninput="calcShift()" style="flex:1">
+            <b onclick="this.parentElement.remove();calcShift()" style="color:red; cursor:pointer; padding:0 5px">×</b>
+        `;
+        document.getElementById('exp-rows').appendChild(div);
+        updateChildSelect(div.querySelector('.exp-p-cat')); // 立即初始化子类
+    }
+
+    function updateChildSelect(pSelect) {
+        const pName = pSelect.value;
+        const cSelect = pSelect.parentElement.querySelector('.exp-c-cat');
+        cSelect.innerHTML = ''; 
+        if (pName && db.cats[pName]) {
+            db.cats[pName].forEach(c => {
+                const opt = document.createElement('option');
+                opt.value = `${pName}:${c}`;
+                opt.textContent = c;
+                cSelect.appendChild(opt);
+            });
+        }
+    }
+
+    function toggleDebtHelper() {
+        const act = document.getElementById('in-action').value;
+        document.getElementById('debt-helper').style.display = (act === 'buy' ? 'block' : 'none');
+    }
+
+    function addDebtTagRow() {
+    const div = document.createElement('div');
+    div.className = 'batch-row';
+    // 新版增加了红色的 × 号，点击可以删除不想要的行
+    div.innerHTML = `
+        <input type="text" placeholder="货品" style="flex:2">
+        <input type="number" step="0.01" placeholder="金额" style="flex:1">
+        <b onclick="this.parentElement.remove()" style="color:red; cursor:pointer; padding:0 10px; font-size:18px;">×</b>
+    `;
+    document.getElementById('debt-tag-rows').appendChild(div);
+}
+
+function exportExcel() {
+    const ws = XLSX.utils.json_to_sheet(db.recs);
+        const wb = XLSX.utils.book_new();
+        XLSX.utils.book_append_sh
+eet(wb, ws, "Financial_Data");
+        XLSX.writeFile(wb, `Bluefield_Finance_${new Date().toISOString().split('T')[0]}.xlsx`);
+    }
+// 备份导出逻辑
+    function exportBackup() {
+        const dataStr = JSON.stringify(db);
+        const blob = new Blob([dataStr], {type: "application/json"});
+        const url = URL.createObjectURL(blob);
+        const a = document.createElement('a');
+        a.href = url;
+        a.download = `BF_Backup_${new Date().toISOString().split('T')[0]}.json`;
+        a.click();
+        alert("✅ 备份文件 (.json) 已下载。请妥善保存，换电脑时可用它导入恢复。");
+    }
+
+    // 备份导入逻辑
+    function importBackup() {
+        const input = document.createElement('input');
+        input.type = 'file';
+        input.accept = '.json';
+        input.onchange = e => {
+            const file = e.target.files[0];
+            const reader = new FileReader();
+            reader.onload = readerEvent => {
+                try {
+                    const content = JSON.parse(readerEvent.target.result);
+                    if (content.recs && content.cats) {
+                        if (confirm("⚠️ 导入将覆盖当前所有数据！确定要导入吗？")) {
+                            db = content;
+                            localStorage.setItem(STORAGE_KEY, JSON.stringify(db));
+                            location.reload(); // 导入后强制刷新页面以加载新数据
+                        }
+                    } else {
+                        alert("❌ 错误：备份文件格式不正确。");
+                    }
+                } catch (err) {
+                    alert("❌ 导入失败，文件可能已损坏。");
+                }
+            };
+            reader.readAsText(file);
+        };
+        input.click();
+    }
+</script>
+</body>
+</html>
+    
