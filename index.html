@@ -377,21 +377,58 @@
 
     // ==================== 权限登录 ====================
     function handleAuth() {
-        if(!isAdmin) { 
-            const pwd = prompt("Password Admin:");
-            if(pwd === ADMIN_PASS) {
-                isAdmin = true; 
-            } else {
-                alert("密码错误 / Incorrecto");
-                return;
-            }
-        } else {
-            isAdmin = false;
-        }
-        document.body.className = isAdmin ? "admin-mode" : "";
-        document.getElementById('roleText').innerText = isAdmin ? "👤 管理员 / Admin" : "👤 员工 / Empleado";
+    if(!isAdmin) { 
+        // 创建密码输入模态框
+        const modal = document.createElement('div');
+        modal.style.cssText = `
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(0,0,0,0.5);
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            z-index: 1000;
+        `;
+        
+        modal.innerHTML = `
+            <div style="background: white; padding: 20px; border-radius: 8px; width: 300px;">
+                <h3 style="margin-top: 0;">请输入管理员密码</h3>
+                <input type="password" id="adminPassInput" style="width: 100%; padding: 8px; margin: 10px 0; border: 1px solid #ddd; border-radius: 4px;" placeholder="密码">
+                <div style="display: flex; gap: 10px; justify-content: flex-end;">
+                    <button onclick="this.closest('div').closest('div').remove()" style="padding: 5px 15px;">取消</button>
+                    <button onclick="checkPassword(this)" style="background: var(--main-red); color: white; border: none; padding: 5px 15px; border-radius: 4px;">确认</button>
+                </div>
+            </div>
+        `;
+        
+        document.body.appendChild(modal);
+    } else {
+        isAdmin = false;
+        document.body.className = "";
+        document.getElementById('roleText').innerText = "👤 员工 / Empleado";
         render();
     }
+}
+
+// 添加密码检查函数
+function checkPassword(btn) {
+    const input = document.getElementById('adminPassInput');
+    const modal = btn.closest('div').closest('div').parentElement;
+    
+    if(input.value === ADMIN_PASS) {
+        isAdmin = true;
+        document.body.className = "admin-mode";
+        document.getElementById('roleText').innerText = "👤 管理员 / Admin";
+        modal.remove();
+        render();
+    } else {
+        alert("密码错误 / Contraseña incorrecta");
+        input.value = '';
+    }
+}
 
     // ==================== 保存档案（简化版）====================
     function saveMaster() {
@@ -715,4 +752,5 @@
 </script>
 </body>
 </html>
+
 
