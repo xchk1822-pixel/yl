@@ -1,0 +1,673 @@
+<!DOCTYPE html>
+<html lang="zh-es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>中国年 V21 - 中西双语科学版 (云端同步)</title>
+    <style>
+        :root { --main-red: #c62828; --gold: #fbc02d; --blue: #1565c0; --green: #2e7d32; --bg: #fdf2f2; }
+        body { font-family: 'Segoe UI', sans-serif; margin: 0; background: var(--bg); color: #333; }
+        header { background: var(--main-red); color: var(--gold); padding: 15px; text-align: center; border-bottom: 5px solid var(--gold); }
+        .container { padding: 15px; max-width: 1300px; margin: auto; }
+        
+        .dash-board { display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 15px; margin-bottom: 20px; }
+        .dash-card { background: white; padding: 12px; border-radius: 10px; border-left: 5px solid var(--main-red); box-shadow: 0 2px 5px rgba(0,0,0,0.1); }
+        .dash-card h4 { margin: 0; color: #666; font-size: 13px; }
+        .dash-card .val { font-size: 20px; font-weight: bold; color: var(--main-red); margin-top: 5px; }
+
+        .nav-bar { background: white; padding: 12px; border-radius: 8px; margin-bottom: 15px; display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; }
+        .admin-only { display: none !important; }
+        .admin-mode .admin-only { display: block !important; }
+
+        .card { background: white; padding: 20px; border-radius: 12px; box-shadow: 0 2px 8px rgba(0,0,0,0.1); margin-bottom: 20px; }
+        
+        .cat-bar { display: flex; gap: 8px; overflow-x: auto; padding: 10px 0; margin-bottom: 10px; border-bottom: 1px solid #eee; }
+        .cat-btn { padding: 6px 15px; border: 1px solid #ddd; border-radius: 20px; background: white; cursor: pointer; white-space: nowrap; }
+        .cat-btn.active { background: var(--main-red); color: white; border-color: var(--main-red); }
+
+        .bill-zone { background: #fffde7; border: 2px dashed var(--gold); padding: 15px; border-radius: 8px; margin-top: 10px; }
+        table { width: 100%; border-collapse: collapse; margin-top: 10px; }
+        th, td { padding: 10px; border-bottom: 1px solid #eee; text-align: left; }
+        th { background: #f8f8f8; color: var(--main-red); font-size: 13px; }
+        
+        .btn { padding: 8px 15px; border: none; border-radius: 4px; cursor: pointer; font-weight: bold; }
+        .btn-red { background: var(--main-red); color: white; }
+        .btn-gold { background: var(--gold); color: #333; }
+        .btn-blue { background: var(--blue); color: white; }
+        .btn-green { background: var(--green); color: white; }
+        
+        .fridge-grid { display: grid; grid-template-columns: repeat(4, 1fr); gap: 10px; margin-bottom: 15px; }
+        .fridge-card { background: white; border: 2px solid #ddd; border-radius: 10px; padding: 12px; text-align: center; cursor: pointer; }
+        .fridge-card.active { border-color: var(--main-red); background: #fff8f8; }
+
+        .stat-line { background: #e8f5e9; padding: 15px; margin-top: 10px; border-radius: 8px; font-weight: bold; display: flex; justify-content: space-between; font-size: 16px; border: 1px solid #c5e1a5; }
+
+        .filter-bar { display: grid; grid-template-columns: repeat(auto-fit, minmax(120px, 1fr)); gap: 10px; margin-bottom: 15px; }
+
+        #cloud-status { 
+            background: #e8f5e9; 
+            padding: 5px 10px; 
+            border-radius: 20px; 
+            font-size: 12px; 
+            display: inline-block;
+            margin-left: 10px;
+        }
+
+        @media print {
+            .no-print, header, .nav-bar, .fridge-grid, #transferBox, .input-area, .admin-only, .dash-board, .cat-bar, .filter-bar, #cloud-status { display: none !important; }
+            .print-full-report { display: block !important; }
+            table { font-size: 11px; border: 1px solid #000; }
+            th, td { border: 1px solid #000; padding: 5px; }
+            .print-area-title { background: #eee; padding: 8px; margin-top: 20px; font-weight: bold; border: 1px solid #000; }
+        }
+        .print-full-report { display: none; }
+    </style>
+</head>
+<body>
+
+<header class="no-print">
+    <h1>中国年管理系统 / Gestión China</h1>
+    <p>双语科学版 V21 (Dual Lenguaje) - 云端同步</p>
+</header>
+
+<div class="container">
+    <div class="dash-board no-print">
+        <div class="dash-card">
+            <h4>今日销售额 / Venta Hoy</h4>
+            <div class="val" id="dashTodayVenta">C$ 0.00</div>
+        </div>
+        <div class="dash-card" style="border-left-color: var(--blue);">
+            <h4>今日进货额 / Compra Hoy</h4>
+            <div class="val" id="dashTodayBuy">C$ 0.00</div>
+        </div>
+        <div class="dash-card" style="border-left-color: #fb8c00;">
+            <h4>总库存货值 / Valor Total</h4>
+            <div class="val" id="dashStockValue">C$ 0.00</div>
+        </div>
+    </div>
+
+    <div class="nav-bar no-print">
+        <div style="display:flex; align-items:center; gap:10px;">
+            <span id="roleText" style="font-weight:bold;">👤 权限: 员工 / Empleado</span>
+            <span id="cloud-status" style="background:#e8f5e9; padding:5px 10px; border-radius:20px; font-size:12px;">☁️ 云端: 连接中...</span>
+        </div>
+        <div style="display:flex; gap:10px; flex-wrap:wrap;">
+            <button class="btn btn-gold" onclick="handleAuth()">权限登录 / Login</button>
+            <button class="btn btn-blue" onclick="window.print()">🖨️ 打印全表 / Imprimir</button>
+        </div>
+    </div>
+
+    <div class="card admin-only no-print">
+        <h3>🛠️ 档案与分类 / Maestro y Categorías</h3>
+        <div style="display:grid; grid-template-columns:repeat(auto-fit, minmax(100px, 1fr)); gap:5px; margin-bottom:15px;">
+            <input type="text" id="mCat" placeholder="分类/Cat">
+            <input type="text" id="mName" placeholder="名称/Nombre">
+            <input type="text" id="mSpec" placeholder="规格/Spec">
+            <input type="number" id="mCost" placeholder="成本/Costo">
+            <input type="number" id="mPrice" placeholder="售价/Precio">
+            <button class="btn btn-red" onclick="saveMaster()">保存 / Guardar</button>
+        </div>
+        <hr>
+        <h3>🧾 进货单据录入 / Registro de Factura</h3>
+        <div class="bill-zone">
+            <div style="display:flex; gap:10px; margin-bottom:10px;">
+                <select id="mSelect" style="flex:2; padding:8px;"></select>
+                <input type="number" id="inQty" placeholder="数/Cant" style="width:80px;" min="1">
+                <button class="btn btn-red" onclick="addItemToTempBill()">添加/Añadir</button>
+            </div>
+            <table id="tempBillTable">
+                <thead><tr><th>品名/Prod</th><th>数量/Cant</th><th>小计/Sub</th><th>操作</th></tr></thead>
+                <tbody id="tempBillBody"></tbody>
+            </table>
+            <div style="display:flex; justify-content:space-between; align-items:center; margin-top:10px;">
+                <h4 id="tempBillTotal">总额/Total: C$ 0.00</h4>
+                <button class="btn btn-gold" onclick="submitFinalBill()">整单入库 / Guardar Todo</button>
+            </div>
+        </div>
+    </div>
+
+    <div class="fridge-grid no-print">
+        <div class="fridge-card" id="btn-wh" onclick="selectArea('总仓库')">📦 总仓库/Almacén</div>
+        <div class="fridge-card" id="btn-n1" onclick="selectArea('1号冰箱')">❄️ 1号/Nevera 1</div>
+        <div class="fridge-card" id="btn-n2" onclick="selectArea('2号冰箱')">❄️ 2号/Nevera 2</div>
+        <div class="fridge-card" id="btn-n3" onclick="selectArea('3号冰箱')">❄️ 3号/Nevera 3</div>
+    </div>
+
+    <div id="catNav" class="cat-bar no-print"></div>
+
+    <div id="transferBox" class="card no-print" style="display:none; background:#e3f2fd; border:1px solid #bbdefb;">
+        <strong>快速调拨 / Traslado: </strong>
+        <select id="moveS"></select> → 
+        <select id="moveT">
+            <option value="1号冰箱">1号/N1</option><option value="2号冰箱">2号/N2</option><option value="3号冰箱">3号/N3</option>
+        </select>
+        <input type="number" id="moveQ" placeholder="数/Cant" style="width:60px" min="1">
+        <button class="btn btn-blue" onclick="execMove()">执行 / Ejecutar</button>
+    </div>
+
+    <div class="card no-print">
+        <h3 id="areaTitle">请选择区域 / Seleccione Área</h3>
+        <table id="stockTable">
+            <thead>
+                <tr><th>分类/Cat</th><th>品名/Producto</th><th>售价/Precio</th><th>库存/Stock</th><th class="input-area">盘点/Venta</th></tr>
+            </thead>
+            <tbody id="stockBody"></tbody>
+        </table>
+        <div id="areaSummaryLine" class="stat-line" style="display:none;">
+            <span>区域货值 / Valor Area:</span>
+            <span id="areaSummaryMoney">C$ 0.00</span>
+        </div>
+    </div>
+
+    <div class="card no-print">
+        <h3>📊 历史对账检索 / Historial y Búsqueda</h3>
+        <div class="filter-bar">
+            <input type="month" id="filterMonth" onchange="render()">
+            <input type="date" id="filterStart" onchange="render()">
+            <input type="date" id="filterEnd" onchange="render()">
+            <input type="text" id="filterSearch" placeholder="搜索品名... / Buscar" oninput="render()">
+        </div>
+        <table>
+            <thead><tr><th>时间/Fecha</th><th>摘要/Nota</th><th>变动/Cant</th><th>金额/Monto</th><th class="admin-only">X</th></tr></thead>
+            <tbody id="logBody"></tbody>
+            <tfoot id="logFoot"></tfoot>
+        </table>
+    </div>
+
+    <div class="print-full-report">
+        <h2 style="text-align:center;">全域库存盘点清单 / Inventario Global</h2>
+        <div id="printContainer"></div>
+    </div>
+</div>
+
+<script>
+    // ==================== Firebase 配置（使用你现有的项目）====================
+    const firebaseConfig = {
+        apiKey: "AIzaSyC3ADmd485_ITMpwaLbLDtctrROiwLHbHw",
+        authDomain: "restaurant-cw.firebaseapp.com",
+        databaseURL: "https://restaurant-cw-default-rtdb.firebaseio.com",
+        projectId: "restaurant-cw",
+        storageBucket: "restaurant-cw.firebasestorage.app",
+        messagingSenderId: "980204506513",
+        appId: "1:980204506513:web:ae195605300782435d9e30",
+        measurementId: "G-43206TF3VJ"
+    };
+
+    // ==================== 全局变量 ====================
+    const STORAGE_KEY = "cn_master_v21";
+    const ADMIN_PASS = "8888";
+    let isAdmin = false, activeArea = "", activeCat = "全部/Todo", tempBillItems = [];
+    let firebaseApp = null, firestore = null, firebaseLoaded = false, syncInProgress = false, autoSyncInterval = null;
+    
+    // 初始化数据
+    let master = JSON.parse(localStorage.getItem('cn_m21')) || [];
+    let stocks = JSON.parse(localStorage.getItem('cn_s21')) || [];
+    let logs = JSON.parse(localStorage.getItem('cn_l21')) || [];
+
+    // 确保每个库存项都有必要字段
+    stocks = stocks.map(s => ({
+        id: s.id || Date.now(),
+        cat: s.cat || "未分类",
+        name: s.name || "未知",
+        spec: s.spec || "",
+        qty: s.qty || 0,
+        cost: s.cost || 0,
+        price: s.price || 0,
+        location: s.location || "总仓库"
+    }));
+
+    // ==================== Firebase 初始化 ====================
+    async function initFirebase() {
+        try {
+            document.getElementById('cloud-status').innerHTML = '☁️ 云端: 加载中...';
+            
+            await loadFirebaseSDK();
+            
+            if (!firebase.apps.length) {
+                firebaseApp = firebase.initializeApp(firebaseConfig);
+            } else {
+                firebaseApp = firebase.app();
+            }
+            
+            firestore = firebase.firestore();
+            await firebase.auth().signInAnonymously();
+            
+            firebaseLoaded = true;
+            document.getElementById('cloud-status').innerHTML = '☁️ 云端: ✅ 已连接';
+            
+            await loadFromCloud();
+            
+        } catch (error) {
+            console.error('Firebase 初始化失败:', error);
+            document.getElementById('cloud-status').innerHTML = '☁️ 云端: ❌ 连接失败';
+        }
+    }
+
+    function loadFirebaseSDK() {
+        return new Promise((resolve, reject) => {
+            if (window.firebase) {
+                resolve();
+                return;
+            }
+            
+            const script1 = document.createElement('script');
+            script1.src = 'https://www.gstatic.com/firebasejs/9.22.0/firebase-app-compat.js';
+            
+            script1.onload = () => {
+                const script2 = document.createElement('script');
+                script2.src = 'https://www.gstatic.com/firebasejs/9.22.0/firebase-firestore-compat.js';
+                const script3 = document.createElement('script');
+                script3.src = 'https://www.gstatic.com/firebasejs/9.22.0/firebase-auth-compat.js';
+                
+                Promise.all([
+                    new Promise(r => { script2.onload = r; document.head.appendChild(script2); }),
+                    new Promise(r => { script3.onload = r; document.head.appendChild(script3); })
+                ]).then(resolve).catch(reject);
+            };
+            
+            script1.onerror = reject;
+            document.head.appendChild(script1);
+        });
+    }
+
+    // ==================== 云端同步函数 ====================
+    async function saveToCloud() {
+        if (!firebaseLoaded || !firestore || syncInProgress) return false;
+        
+        try {
+            syncInProgress = true;
+            await firestore.collection('inventoryData').doc('mainData').set({
+                master: master,
+                stocks: stocks,
+                logs: logs,
+                lastSync: new Date().toISOString()
+            });
+            document.getElementById('cloud-status').innerHTML = '☁️ 云端: ✅ 已同步 ' + new Date().toLocaleTimeString();
+            return true;
+        } catch (error) {
+            console.error('保存到云端失败:', error);
+            document.getElementById('cloud-status').innerHTML = '☁️ 云端: ⚠️ 同步失败';
+            return false;
+        } finally {
+            syncInProgress = false;
+        }
+    }
+
+    async function loadFromCloud() {
+        if (!firebaseLoaded || !firestore) return false;
+        
+        try {
+            const doc = await firestore.collection('inventoryData').doc('mainData').get();
+            
+            if (doc.exists) {
+                const cloudData = doc.data();
+                // 移除 lastSync 字段，只保留数据
+                delete cloudData.lastSync;
+                
+                // 比较本地和云端，取更新的那个
+                const localData = localStorage.getItem(STORAGE_KEY);
+                if (localData) {
+                    const localParsed = JSON.parse(localData);
+                    console.log("使用本地数据");
+                    // 已经有本地数据了，不做操作
+                } else {
+                    // 本地没有数据，用云端的
+                    if (cloudData.master) master = cloudData.master;
+                    if (cloudData.stocks) stocks = cloudData.stocks;
+                    if (cloudData.logs) logs = cloudData.logs;
+                    localStorage.setItem('cn_m21', JSON.stringify(master));
+                    localStorage.setItem('cn_s21', JSON.stringify(stocks));
+                    localStorage.setItem('cn_l21', JSON.stringify(logs));
+                    document.getElementById('cloud-status').innerHTML = '☁️ 云端: ✅ 已加载云端数据';
+                }
+                render();
+                return true;
+            } else {
+                // 云端没有数据，上传本地
+                await saveToCloud();
+                return false;
+            }
+        } catch (error) {
+            console.error('从云端加载失败:', error);
+            return false;
+        }
+    }
+
+    // ==================== 原有功能函数 ====================
+    function save() {
+        localStorage.setItem('cn_m21', JSON.stringify(master));
+        localStorage.setItem('cn_s21', JSON.stringify(stocks));
+        localStorage.setItem('cn_l21', JSON.stringify(logs));
+        saveToCloud(); // 同步到云端
+        render();
+    }
+
+    function handleAuth() {
+        if(!isAdmin) { 
+            const pwd = prompt("请输入管理员密码 / Contraseña Admin:");
+            if(pwd === ADMIN_PASS) {
+                isAdmin = true; 
+            } else {
+                alert("密码错误 / Contraseña incorrecta");
+                return;
+            }
+        } else {
+            isAdmin = false;
+        }
+        updateAdminMode();
+        render();
+    }
+
+    function updateAdminMode() {
+        if (isAdmin) {
+            document.body.classList.add('admin-mode');
+            document.getElementById('roleText').innerHTML = "👤 管理员 / Admin";
+        } else {
+            document.body.classList.remove('admin-mode');
+            document.getElementById('roleText').innerHTML = "👤 员工 / Empleado";
+        }
+    }
+
+    function saveMaster() {
+        if (!isAdmin) {
+            alert("只有管理员可操作 / Solo Admin");
+            return;
+        }
+        const c = document.getElementById('mCat').value || "General", 
+              n = document.getElementById('mName').value;
+        const s = document.getElementById('mSpec').value, 
+              ct = parseFloat(document.getElementById('mCost').value) || 0, 
+              p = parseFloat(document.getElementById('mPrice').value) || 0;
+        if(n) { 
+            master.push({id:Date.now(), cat:c, name:n, spec:s, cost:ct, price:p}); 
+            save(); 
+            document.getElementById('mCat').value = '';
+            document.getElementById('mName').value = '';
+            document.getElementById('mSpec').value = '';
+            document.getElementById('mCost').value = '';
+            document.getElementById('mPrice').value = '';
+        } else {
+            alert("请输入名称 / Ingrese nombre");
+        }
+    }
+
+    function addItemToTempBill() {
+        const mid = document.getElementById('mSelect').value, 
+              qty = parseInt(document.getElementById('inQty').value);
+        if(!mid || !qty || qty <= 0) {
+            alert("请选择商品并输入有效数量 / Seleccione producto y cantidad válida");
+            return;
+        }
+        const m = master.find(x => x.id == mid);
+        if (!m) return;
+        tempBillItems.push({ ...m, qty, sub: m.cost * qty });
+        document.getElementById('inQty').value = '';
+        renderTempBill();
+    }
+
+    function renderTempBill() {
+        let total = 0;
+        document.getElementById('tempBillBody').innerHTML = tempBillItems.map((item, idx) => {
+            total += item.sub;
+            return `<tr><td>${item.name} (${item.spec})</td><td>${item.qty}</td><td>C$ ${item.sub.toFixed(1)}</td><td><button class="btn-red" onclick="removeTempItem(${idx})">X</button></td></tr>`;
+        }).join('');
+        document.getElementById('tempBillTotal').innerText = `总额/Total: C$ ${total.toFixed(2)}`;
+    }
+
+    function removeTempItem(idx) {
+        tempBillItems.splice(idx, 1);
+        renderTempBill();
+    }
+
+    function submitFinalBill() {
+        if(!tempBillItems.length) {
+            alert("请先添加商品 / Añada productos primero");
+            return;
+        }
+        let total = 0;
+        tempBillItems.forEach(item => {
+            let s = stocks.find(x => x.name === item.name && x.location === '总仓库' && x.spec === item.spec);
+            if(s) {
+                s.qty += item.qty;
+            } else {
+                stocks.push({
+                    id:Date.now(), 
+                    cat:item.cat, 
+                    name:item.name, 
+                    spec:item.spec, 
+                    qty:item.qty, 
+                    cost:item.cost, 
+                    price:item.price, 
+                    location:'总仓库'
+                });
+            }
+            total += item.sub;
+        });
+        logs.push({
+            id:Date.now(), 
+            t:new Date().toISOString(), 
+            type:'进货/Compra', 
+            note:`批量入库 ${tempBillItems.length}项`, 
+            q:tempBillItems.length, 
+            amt:total
+        });
+        tempBillItems = []; 
+        renderTempBill(); 
+        save();
+    }
+
+    function selectArea(area) {
+        activeArea = area;
+        document.querySelectorAll('.fridge-card').forEach(c => c.classList.remove('active'));
+        const map = {'总仓库':'btn-wh','1号冰箱':'btn-n1','2号冰箱':'btn-n2','3号冰箱':'btn-n3'};
+        document.getElementById(map[area]).classList.add('active');
+        document.getElementById('areaTitle').innerText = `${area}`;
+        document.getElementById('transferBox').style.display = (area==='总仓库'?'block':'none');
+        render();
+    }
+
+    function execMove() {
+        if (!isAdmin) {
+            alert("只有管理员可调拨 / Solo Admin");
+            return;
+        }
+        const sid = document.getElementById('moveS').value, 
+              target = document.getElementById('moveT').value, 
+              qty = parseInt(document.getElementById('moveQ').value);
+        if (!sid || !qty || qty <= 0) {
+            alert("请选择商品和数量 / Seleccione producto y cantidad");
+            return;
+        }
+        const s = stocks.find(x => x.id == sid);
+        if(s && qty <= s.qty) {
+            s.qty -= qty;
+            let ts = stocks.find(x => x.name === s.name && x.location === target && x.spec === s.spec);
+            if(ts) {
+                ts.qty += qty;
+            } else {
+                stocks.push({
+                    ...s, 
+                    id:Date.now(), 
+                    qty: qty, 
+                    location: target
+                });
+            }
+            logs.push({
+                id:Date.now(), 
+                t:new Date().toISOString(), 
+                type:'调拨/Traslado', 
+                note:`从总仓库到 ${target}: ${s.name}`, 
+                q:qty, 
+                amt:0
+            });
+            document.getElementById('moveQ').value = '';
+            save();
+        } else {
+            alert("库存不足 / Stock insuficiente");
+        }
+    }
+
+    function doCheck(id) {
+        if (!isAdmin) {
+            alert("只有管理员可盘点 / Solo Admin");
+            return;
+        }
+        const input = document.getElementById(`input-${id}`), 
+              real = parseInt(input.value), 
+              s = stocks.find(x => x.id === id);
+        if(!s) return;
+        
+        if(isNaN(real) || real < 0) {
+            alert("请输入有效数量 / Ingrese cantidad válida");
+            return;
+        }
+        
+        const gap = s.qty - real;
+        if(gap < 0) {
+            alert("实盘不能大于系统库存 / Real no puede > sistema");
+            return;
+        }
+        
+        if(gap > 0) {
+            logs.push({
+                id:Date.now(), 
+                t:new Date().toISOString(), 
+                type:'销售/Venta', 
+                note:`${s.name} @ ${s.location}`, 
+                q:gap, 
+                amt:gap * s.price
+            });
+            s.qty = real;
+        }
+        input.value = ''; 
+        save();
+    }
+
+    function render() {
+        // 更新权限模式显示
+        updateAdminMode();
+        
+        // 生成分类导航
+        const cats = ["全部/Todo", ...new Set(master.map(m => m.cat))];
+        document.getElementById('catNav').innerHTML = cats.map(c => 
+            `<button class="cat-btn ${activeCat===c?'active':''}" onclick="activeCat='${c}';render()">${c}</button>`
+        ).join('');
+        
+        // 更新商品选择下拉框
+        document.getElementById('mSelect').innerHTML = [...master]
+            .sort((a,b)=> (a.cat || '').localeCompare(b.cat || ''))
+            .map(m => `<option value="${m.id}">[${m.cat}] ${m.name} ${m.spec}</option>`).join('');
+        
+        // 更新调拨下拉框
+        document.getElementById('moveS').innerHTML = stocks
+            .filter(x => x.location === '总仓库')
+            .map(s => `<option value="${s.id}">${s.name} ${s.spec} (${s.qty})</option>`).join('');
+
+        // 计算仪表盘数据
+        const today = new Date().toISOString().slice(0,10);
+        let tVenta = 0, tBuy = 0, totalStockVal = 0, areaVal = 0;
+        
+        logs.forEach(l => { 
+            if(l.t && l.t.startsWith(today)) { 
+                if(l.type && l.type.includes('销售')) tVenta += l.amt || 0; 
+                if(l.type && l.type.includes('进货')) tBuy += l.amt || 0; 
+            }
+        });
+        
+        stocks.forEach(s => { 
+            totalStockVal += (s.qty || 0) * (s.cost || 0);
+            if(s.location === activeArea) areaVal += (s.qty || 0) * (s.cost || 0);
+        });
+
+        document.getElementById('dashTodayVenta').innerText = `C$ ${tVenta.toFixed(1)}`;
+        document.getElementById('dashTodayBuy').innerText = `C$ ${tBuy.toFixed(1)}`;
+        document.getElementById('dashStockValue').innerText = `C$ ${totalStockVal.toFixed(0)}`;
+
+        // 渲染库存表
+        let displayStocks = stocks.filter(x => x.location === activeArea);
+        if(activeCat !== "全部/Todo") displayStocks = displayStocks.filter(x => x.cat === activeCat);
+        
+        document.getElementById('stockBody').innerHTML = displayStocks.map(s => `
+            <tr>
+                <td><small>${s.cat || ''}</small></td>
+                <td><b>${s.name || ''}</b> <small>${s.spec || ''}</small></td>
+                <td>C$ ${(s.price || 0).toFixed(1)}</td>
+                <td><b style="color:var(--main-red)">${s.qty || 0}</b></td>
+                <td class="input-area ${!isAdmin ? 'admin-only' : ''}">
+                    <input type="number" id="input-${s.id}" style="width:40px" min="0"> 
+                    <button class="btn-red" onclick="doCheck(${s.id})">OK</button>
+                </td>
+            </tr>
+        `).join('');
+
+        // 显示区域货值
+        if(activeArea) {
+            document.getElementById('areaSummaryLine').style.display = 'flex';
+            document.getElementById('areaSummaryMoney').innerText = `C$ ${areaVal.toFixed(0)}`;
+        } else {
+            document.getElementById('areaSummaryLine').style.display = 'none';
+        }
+
+        // 历史记录过滤
+        const mF = document.getElementById('filterMonth').value, 
+              sF = document.getElementById('filterStart').value, 
+              eF = document.getElementById('filterEnd').value, 
+              qF = document.getElementById('filterSearch').value.toLowerCase();
+              
+        let filtered = logs.filter(l => {
+            if (!l.t) return false;
+            const ld = l.t.slice(0,10), lm = l.t.slice(0,7);
+            if(mF && lm !== mF) return false;
+            if(sF && ld < sF) return false;
+            if(eF && ld > eF) return false;
+            if(qF && !(l.note || '').toLowerCase().includes(qF)) return false;
+            return true;
+        });
+
+        let curSale = 0, curBuy = 0;
+        document.getElementById('logBody').innerHTML = filtered.slice().reverse().map(l => {
+            if(l.type && l.type.includes('销售')) curSale += l.amt || 0; 
+            else if(l.type && l.type.includes('进货')) curBuy += l.amt || 0;
+            return `<tr>
+                <td>${l.t ? l.t.slice(5,16).replace('T',' ') : ''}</td>
+                <td>${l.type || ''}: ${l.note || ''}</td>
+                <td>${l.q || 0}</td>
+                <td style="color:${l.type && l.type.includes('销售')?'green':'red'}">C$ ${(l.amt || 0).toFixed(1)}</td>
+                <td class="admin-only"><button onclick="if(confirm('确定删除? / ¿Eliminar?')){logs=logs.filter(x=>x.id!==${l.id});save();}">X</button></td>
+            </tr>`;
+        }).join('');
+        
+        document.getElementById('logFoot').innerHTML = `<tr style="background:#fff9c4;">
+            <td colspan="2">汇总/Resumen:</td>
+            <td>销售/Venta: C$ ${curSale.toFixed(1)}</td>
+            <td colspan="2">进货/Compra: C$ ${curBuy.toFixed(1)}</td>
+        </tr>`;
+
+        // 打印内容
+        document.getElementById('printContainer').innerHTML = ['总仓库/Almacén', '1号冰箱/Nevera 1', '2号冰箱/Nevera 2', '3号冰箱/Nevera 3'].map(a => {
+            const areaName = a.split('/')[0];
+            const list = stocks.filter(x => x.location === areaName).sort((a,b) => (a.cat || '').localeCompare(b.cat || ''));
+            return `<div class="print-area-title">${a}</div>
+                <table>
+                    <thead><tr><th>分类/Cat</th><th>产品/Prod</th><th>库存/Sist</th><th>实测/Real</th></tr></thead>
+                    <tbody>${list.map(s => `<tr><td>${s.cat || ''}</td><td>${s.name || ''} (${s.spec || ''})</td><td>${s.qty || 0}</td><td>____</td></tr>`).join('')}</tbody>
+                </table>`;
+        }).join('');
+    }
+
+    // ==================== 初始化 ====================
+    window.onload = () => {
+        updateAdminMode();
+        render();
+        initFirebase();
+        
+        // 每5分钟自动同步一次
+        autoSyncInterval = setInterval(() => {
+            if (firebaseLoaded && !syncInProgress) {
+                saveToCloud();
+            }
+        }, 5 * 60 * 1000);
+    };
+</script>
+</body>
+</html>
