@@ -104,12 +104,12 @@
         <div style="display:grid; grid-template-columns:repeat(auto-fit, minmax(120px, 1fr)); gap:8px; margin-bottom:15px;">
             <!-- 主类下拉 -->
             <select id="mMainCat" style="padding:8px;">
-    <option value="饮品" selected>饮品/Bebidas</option>
-    <option value="酒类">酒类/cerveza</option>
-    <option value="食材">食材/Alimentos</option>
-    <option value="调料">调料/Condimentos</option>
-    <option value="其他">其他/Otros</option>
-</select>
+                <option value="饮品" selected>饮品/Bebidas</option>
+                <option value="酒类">酒类/cerveza</option>
+                <option value="食材">食材/Alimentos</option>
+                <option value="调料">调料/Condimentos</option>
+                <option value="其他">其他/Otros</option>
+            </select>
             
             <!-- 品名 -->
             <input type="text" id="mName" placeholder="品名/Nombre" style="padding:8px;" required>
@@ -376,58 +376,58 @@
 
     // ==================== 权限登录 ====================
     function handleAuth() {
-    if(!isAdmin) { 
-        // 创建密码输入模态框
-        const modal = document.createElement('div');
-        modal.style.cssText = `
-            position: fixed;
-            top: 0;
-            left: 0;
-            width: 100%;
-            height: 100%;
-            background: rgba(0,0,0,0.5);
-            display: flex;
-            justify-content: center;
-            align-items: center;
-            z-index: 1000;
-        `;
-        
-        modal.innerHTML = `
-            <div style="background: white; padding: 20px; border-radius: 8px; width: 300px;">
-                <h3 style="margin-top: 0;">请输入管理员密码</h3>
-                <input type="password" id="adminPassInput" style="width: 100%; padding: 8px; margin: 10px 0; border: 1px solid #ddd; border-radius: 4px;" placeholder="密码">
-                <div style="display: flex; gap: 10px; justify-content: flex-end;">
-                    <button onclick="this.closest('div').closest('div').remove()" style="padding: 5px 15px;">取消</button>
-                    <button onclick="checkPassword(this)" style="background: var(--main-red); color: white; border: none; padding: 5px 15px; border-radius: 4px;">确认</button>
+        if(!isAdmin) { 
+            // 创建密码输入模态框
+            const modal = document.createElement('div');
+            modal.style.cssText = `
+                position: fixed;
+                top: 0;
+                left: 0;
+                width: 100%;
+                height: 100%;
+                background: rgba(0,0,0,0.5);
+                display: flex;
+                justify-content: center;
+                align-items: center;
+                z-index: 1000;
+            `;
+            
+            modal.innerHTML = `
+                <div style="background: white; padding: 20px; border-radius: 8px; width: 300px;">
+                    <h3 style="margin-top: 0;">请输入管理员密码</h3>
+                    <input type="password" id="adminPassInput" style="width: 100%; padding: 8px; margin: 10px 0; border: 1px solid #ddd; border-radius: 4px;" placeholder="密码">
+                    <div style="display: flex; gap: 10px; justify-content: flex-end;">
+                        <button onclick="document.body.removeChild(this.closest('div').closest('div').parentElement)" style="padding: 5px 15px;">取消</button>
+                        <button onclick="checkPassword(this)" style="background: var(--main-red); color: white; border: none; padding: 5px 15px; border-radius: 4px;">确认</button>
+                    </div>
                 </div>
-            </div>
-        `;
-        
-        document.body.appendChild(modal);
-    } else {
-        isAdmin = false;
-        document.body.className = "";
-        document.getElementById('roleText').innerText = "👤 员工 / Empleado";
-        render();
+            `;
+            
+            document.body.appendChild(modal);
+        } else {
+            isAdmin = false;
+            document.body.className = "";
+            document.getElementById('roleText').innerText = "👤 员工 / Empleado";
+            render();
+        }
     }
-}
 
-// 添加密码检查函数
-function checkPassword(btn) {
-    const input = document.getElementById('adminPassInput');
-    const modal = btn.closest('div').closest('div').parentElement;
-    
-    if(input.value === ADMIN_PASS) {
-        isAdmin = true;
-        document.body.className = "admin-mode";
-        document.getElementById('roleText').innerText = "👤 管理员 / Admin";
-        modal.remove();
-        render();
-    } else {
-        alert("密码错误 / Contraseña incorrecta");
-        input.value = '';
+    // 添加密码检查函数
+    function checkPassword(btn) {
+        const input = document.getElementById('adminPassInput');
+        const modal = btn.closest('div').closest('div').parentElement;
+        
+        if(input.value === ADMIN_PASS) {
+            isAdmin = true;
+            document.body.className = "admin-mode";
+            document.getElementById('roleText').innerText = "👤 管理员 / Admin";
+            document.body.removeChild(modal);
+            render();
+        } else {
+            alert("密码错误 / Contraseña incorrecta");
+            input.value = '';
+        }
     }
-}
 
     // ==================== 保存档案（简化版）====================
     function saveMaster() {
@@ -481,7 +481,7 @@ function checkPassword(btn) {
     }
 
     function clearMasterInputs() {
-        document.getElementById('mMainCat').value = '';
+        document.getElementById('mMainCat').value = '饮品';
         document.getElementById('mName').value = '';
         document.getElementById('mSpec').value = '';
         document.getElementById('mCost').value = '';
@@ -496,7 +496,7 @@ function checkPassword(btn) {
         const item = master.find(m => m.id === id);
         if (!item) return;
         
-        document.getElementById('mMainCat').value = item.cat || '';
+        document.getElementById('mMainCat').value = item.cat || '饮品';
         document.getElementById('mName').value = item.name || '';
         document.getElementById('mSpec').value = item.spec || '';
         document.getElementById('mCost').value = item.cost || 0;
@@ -751,7 +751,3 @@ function checkPassword(btn) {
 </script>
 </body>
 </html>
-
-
-
-
