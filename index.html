@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>中国年饮料酒水管理 (云端同步)</title>
+    <title>中国年 V21 - 中西双语科学版 (云端同步)</title>
     <style>
         :root { --main-red: #c62828; --gold: #fbc02d; --blue: #1565c0; --green: #2e7d32; --bg: #fdf2f2; }
         body { font-family: 'Segoe UI', sans-serif; margin: 0; background: var(--bg); color: #333; }
@@ -53,6 +53,8 @@
             margin-left: 10px;
         }
 
+        .input-group { display: flex; gap: 5px; align-items: center; }
+
         @media print {
             .no-print, header, .nav-bar, .fridge-grid, #transferBox, .input-area, .admin-only, .dash-board, .cat-bar, .filter-bar, #cloud-status { display: none !important; }
             .print-full-report { display: block !important; }
@@ -66,8 +68,8 @@
 <body>
 
 <header class="no-print">
-    <h1>中国年饮料酒水管理系统 / Gestión China</h1>
-    <p>饮料酒水 V21 (Dual Lenguaje) - 云端同步</p>
+    <h1>中国年管理系统 / Gestión China</h1>
+    <p>双语科学版 V21 (Dual Lenguaje) - 云端同步</p>
 </header>
 
 <div class="container">
@@ -87,7 +89,7 @@
     </div>
 
     <div class="nav-bar no-print">
-        <div style="display:flex; align-items:center; gap:10px;">
+        <div style="display:flex; align-items:center; gap:10px; flex-wrap:wrap;">
             <span id="roleText" style="font-weight:bold;">👤 权限: 员工 / Empleado</span>
             <span id="cloud-status" style="background:#e8f5e9; padding:5px 10px; border-radius:20px; font-size:12px;">☁️ 云端: 连接中...</span>
         </div>
@@ -99,14 +101,32 @@
 
     <div class="card admin-only no-print">
         <h3>🛠️ 档案与分类 / Maestro y Categorías</h3>
-        <div style="display:grid; grid-template-columns:repeat(auto-fit, minmax(100px, 1fr)); gap:5px; margin-bottom:15px;">
-            <input type="text" id="mCat" placeholder="分类/Cat">
-            <input type="text" id="mName" placeholder="名称/Nombre">
-            <input type="text" id="mSpec" placeholder="规格/Spec">
-            <input type="number" id="mCost" placeholder="成本/Costo">
-            <input type="number" id="mPrice" placeholder="售价/Precio">
+        <div style="display:grid; grid-template-columns:repeat(auto-fit, minmax(100px, 1fr)); gap:8px; margin-bottom:15px;">
+            <select id="mMainCat" style="padding:8px;" onchange="updateSubCats()">
+                <option value="">主类/Main</option>
+                <option value="饮品/Bebidas">饮品/Bebidas</option>
+                <option value="食材/Alimentos">食材/Alimentos</option>
+                <option value="调料/Condimentos">调料/Condimentos</option>
+                <option value="酒类/Licores">酒类/Licores</option>
+                <option value="其他/Otros">其他/Otros</option>
+            </select>
+            <select id="mSubCat" style="padding:8px;" onchange="updateChildCats()">
+                <option value="">小类/Sub</option>
+            </select>
+            <input type="text" id="mChildCat" placeholder="支类/Child" list="childList">
+            <datalist id="childList"></datalist>
+            <input type="text" id="mName" placeholder="品名/Nombre" required>
+            <input type="text" id="mSpec" placeholder="规格(升/袋/个)/Spec">
+            <input type="number" id="mCost" step="0.01" placeholder="成本/Costo" value="0">
+            <input type="number" id="mPrice" step="0.01" placeholder="售价/Precio" value="0">
             <button class="btn btn-red" onclick="saveMaster()">保存 / Guardar</button>
         </div>
+        <div style="margin-top:5px; font-size:12px; color:#666;">
+            <span>📌 分类格式: 主类:小类:支类 (例: 饮品:可乐:500ml)</span>
+        </div>
+        
+        <div id="masterListContainer" style="margin-top:20px;"></div>
+        
         <hr>
         <h3>🧾 进货单据录入 / Registro de Factura</h3>
         <div class="bill-zone">
@@ -309,7 +329,6 @@
                 if (localData) {
                     const localParsed = JSON.parse(localData);
                     console.log("使用本地数据");
-                    // 已经有本地数据了，不做操作
                 } else {
                     // 本地没有数据，用云端的
                     if (cloudData.master) master = cloudData.master;
@@ -368,29 +387,235 @@
         }
     }
 
+    // ==================== 新增的分类管理函数 ====================
+    function updateSubCats() {
+        const mainCat = document.getElementById('mMainCat').value;
+        const subSelect = document.getElementById('mSubCat');
+        const childInput = document.getElementById('mChildCat');
+        const childList = document.getElementById('childList');
+        
+        subSelect.innerHTML = '<option value="">小类/Sub</option>';
+        childInput.value = '';
+        childList.innerHTML = '';
+        
+        if (!mainCat) return;
+        
+        const mainPrefix = mainCat.split('/')[0];
+        const subCats = [...new Set(master
+            .filter(m => m.cat && m.cat.startsWith(mainPrefix))
+            .map(m => {
+                const parts = m.cat.split(':');
+                return parts.length > 1 ? parts[1] : '';
+            })
+            .filter(c => c)
+        )];
+        
+        subCats.sort().forEach(sc => {
+            const opt = document.createElement('option');
+            opt.value = sc;
+            opt.textContent = sc;
+            subSelect.appendChild(opt);
+        });
+        
+        const childCats = [...new Set(master
+            .filter(m => m.cat && m.cat.startsWith(mainPrefix))
+            .map(m => {
+                const parts = m.cat.split(':');
+                return parts.length > 2 ? parts[2] : '';
+            })
+            .filter(c => c)
+        )];
+        
+        childCats.sort().forEach(cc => {
+            const opt = document.createElement('option');
+            opt.value = cc;
+            childList.appendChild(opt);
+        });
+    }
+
+    function updateChildCats() {
+        const mainCat = document.getElementById('mMainCat').value;
+        const subCat = document.getElementById('mSubCat').value;
+        const childList = document.getElementById('childList');
+        
+        childList.innerHTML = '';
+        if (!mainCat || !subCat) return;
+        
+        const mainPrefix = mainCat.split('/')[0];
+        const prefix = mainPrefix + ':' + subCat;
+        const childCats = [...new Set(master
+            .filter(m => m.cat && m.cat.startsWith(prefix))
+            .map(m => {
+                const parts = m.cat.split(':');
+                return parts.length > 2 ? parts[2] : '';
+            })
+            .filter(c => c)
+        )];
+        
+        childCats.sort().forEach(cc => {
+            const opt = document.createElement('option');
+            opt.value = cc;
+            childList.appendChild(opt);
+        });
+    }
+
     function saveMaster() {
         if (!isAdmin) {
             alert("只有管理员可操作 / Solo Admin");
             return;
         }
-        const c = document.getElementById('mCat').value || "General", 
-              n = document.getElementById('mName').value;
-        const s = document.getElementById('mSpec').value, 
-              ct = parseFloat(document.getElementById('mCost').value) || 0, 
-              p = parseFloat(document.getElementById('mPrice').value) || 0;
-        if(n) { 
-            master.push({id:Date.now(), cat:c, name:n, spec:s, cost:ct, price:p}); 
-            save(); 
-            document.getElementById('mCat').value = '';
-            document.getElementById('mName').value = '';
-            document.getElementById('mSpec').value = '';
-            document.getElementById('mCost').value = '';
-            document.getElementById('mPrice').value = '';
+        
+        const mainCat = document.getElementById('mMainCat').value;
+        const subCat = document.getElementById('mSubCat').value;
+        const childCat = document.getElementById('mChildCat').value;
+        const name = document.getElementById('mName').value;
+        const spec = document.getElementById('mSpec').value;
+        const cost = parseFloat(document.getElementById('mCost').value) || 0;
+        const price = parseFloat(document.getElementById('mPrice').value) || 0;
+        
+        if (!mainCat) {
+            alert("请选择主分类 / Seleccione categoría principal");
+            return;
+        }
+        if (!name) {
+            alert("请输入品名 / Ingrese nombre");
+            return;
+        }
+        
+        let fullCat = mainCat.split('/')[0];
+        if (subCat) fullCat += ':' + subCat;
+        if (childCat) fullCat += ':' + childCat;
+        
+        const existing = master.find(m => 
+            m.name === name && 
+            m.spec === spec && 
+            m.cat === fullCat
+        );
+        
+        if (existing) {
+            if (confirm(`品名 "${name}" 已存在，是否更新成本和售价？`)) {
+                existing.cost = cost;
+                existing.price = price;
+                save();
+                clearMasterInputs();
+                return;
+            }
         } else {
-            alert("请输入名称 / Ingrese nombre");
+            master.push({
+                id: Date.now(), 
+                cat: fullCat, 
+                name: name, 
+                spec: spec, 
+                cost: cost, 
+                price: price
+            });
+            save();
+            clearMasterInputs();
         }
     }
 
+    function clearMasterInputs() {
+        document.getElementById('mMainCat').value = '';
+        document.getElementById('mSubCat').innerHTML = '<option value="">小类/Sub</option>';
+        document.getElementById('mChildCat').value = '';
+        document.getElementById('mName').value = '';
+        document.getElementById('mSpec').value = '';
+        document.getElementById('mCost').value = '';
+        document.getElementById('mPrice').value = '';
+    }
+
+    function editMasterItem(id) {
+        if (!isAdmin) {
+            alert("只有管理员可操作 / Solo Admin");
+            return;
+        }
+        const item = master.find(m => m.id === id);
+        if (!item) return;
+        
+        const parts = item.cat.split(':');
+        const mainCat = parts[0];
+        const subCat = parts.length > 1 ? parts[1] : '';
+        const childCat = parts.length > 2 ? parts[2] : '';
+        
+        const mainSelect = document.getElementById('mMainCat');
+        for (let i = 0; i < mainSelect.options.length; i++) {
+            if (mainSelect.options[i].value.startsWith(mainCat)) {
+                mainSelect.value = mainSelect.options[i].value;
+                break;
+            }
+        }
+        
+        updateSubCats();
+        
+        setTimeout(() => {
+            if (subCat) {
+                document.getElementById('mSubCat').value = subCat;
+                updateChildCats();
+                setTimeout(() => {
+                    document.getElementById('mChildCat').value = childCat || '';
+                }, 50);
+            }
+            document.getElementById('mName').value = item.name || '';
+            document.getElementById('mSpec').value = item.spec || '';
+            document.getElementById('mCost').value = item.cost || 0;
+            document.getElementById('mPrice').value = item.price || 0;
+        }, 100);
+    }
+
+    function deleteMasterItem(id) {
+        if (!isAdmin) {
+            alert("只有管理员可操作 / Solo Admin");
+            return;
+        }
+        if (confirm("确定删除此档案？ / ¿Eliminar este registro?")) {
+            master = master.filter(m => m.id !== id);
+            save();
+        }
+    }
+
+    function renderMasterList() {
+        if (!isAdmin) return;
+        
+        const container = document.getElementById('masterListContainer');
+        if (!container) return;
+        
+        const sortedMaster = [...master].sort((a,b) => (a.cat || '').localeCompare(b.cat || ''));
+        
+        container.innerHTML = `
+            <h4>📋 现有档案 / Registros Existentes (${master.length})</h4>
+            <div style="max-height:300px; overflow-y:auto; border:1px solid #ddd; border-radius:4px;">
+                <table style="width:100%; font-size:12px;">
+                    <thead style="position:sticky; top:0; background:#f8f8f8;">
+                        <tr>
+                            <th>分类/Cat</th>
+                            <th>品名/Nombre</th>
+                            <th>规格/Spec</th>
+                            <th>成本/Costo</th>
+                            <th>售价/Precio</th>
+                            <th>操作</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        ${sortedMaster.map(item => `
+                            <tr>
+                                <td>${item.cat || ''}</td>
+                                <td>${item.name || ''}</td>
+                                <td>${item.spec || ''}</td>
+                                <td>C$ ${(item.cost || 0).toFixed(2)}</td>
+                                <td>C$ ${(item.price || 0).toFixed(2)}</td>
+                                <td>
+                                    <button class="btn-blue" style="padding:2px 5px; margin-right:2px;" onclick="editMasterItem(${item.id})">✏️</button>
+                                    <button class="btn-red" style="padding:2px 5px;" onclick="deleteMasterItem(${item.id})">🗑️</button>
+                                </td>
+                            </tr>
+                        `).join('')}
+                    </tbody>
+                </table>
+            </div>
+        `;
+    }
+
+    // ==================== 进货功能 ====================
     function addItemToTempBill() {
         const mid = document.getElementById('mSelect').value, 
               qty = parseInt(document.getElementById('inQty').value);
@@ -553,122 +778,5 @@
             `<button class="cat-btn ${activeCat===c?'active':''}" onclick="activeCat='${c}';render()">${c}</button>`
         ).join('');
         
-        // 更新商品选择下拉框
-        document.getElementById('mSelect').innerHTML = [...master]
-            .sort((a,b)=> (a.cat || '').localeCompare(b.cat || ''))
-            .map(m => `<option value="${m.id}">[${m.cat}] ${m.name} ${m.spec}</option>`).join('');
-        
-        // 更新调拨下拉框
-        document.getElementById('moveS').innerHTML = stocks
-            .filter(x => x.location === '总仓库')
-            .map(s => `<option value="${s.id}">${s.name} ${s.spec} (${s.qty})</option>`).join('');
-
-        // 计算仪表盘数据
-        const today = new Date().toISOString().slice(0,10);
-        let tVenta = 0, tBuy = 0, totalStockVal = 0, areaVal = 0;
-        
-        logs.forEach(l => { 
-            if(l.t && l.t.startsWith(today)) { 
-                if(l.type && l.type.includes('销售')) tVenta += l.amt || 0; 
-                if(l.type && l.type.includes('进货')) tBuy += l.amt || 0; 
-            }
-        });
-        
-        stocks.forEach(s => { 
-            totalStockVal += (s.qty || 0) * (s.cost || 0);
-            if(s.location === activeArea) areaVal += (s.qty || 0) * (s.cost || 0);
-        });
-
-        document.getElementById('dashTodayVenta').innerText = `C$ ${tVenta.toFixed(1)}`;
-        document.getElementById('dashTodayBuy').innerText = `C$ ${tBuy.toFixed(1)}`;
-        document.getElementById('dashStockValue').innerText = `C$ ${totalStockVal.toFixed(0)}`;
-
-        // 渲染库存表
-        let displayStocks = stocks.filter(x => x.location === activeArea);
-        if(activeCat !== "全部/Todo") displayStocks = displayStocks.filter(x => x.cat === activeCat);
-        
-        document.getElementById('stockBody').innerHTML = displayStocks.map(s => `
-            <tr>
-                <td><small>${s.cat || ''}</small></td>
-                <td><b>${s.name || ''}</b> <small>${s.spec || ''}</small></td>
-                <td>C$ ${(s.price || 0).toFixed(1)}</td>
-                <td><b style="color:var(--main-red)">${s.qty || 0}</b></td>
-                <td class="input-area ${!isAdmin ? 'admin-only' : ''}">
-                    <input type="number" id="input-${s.id}" style="width:40px" min="0"> 
-                    <button class="btn-red" onclick="doCheck(${s.id})">OK</button>
-                </td>
-            </tr>
-        `).join('');
-
-        // 显示区域货值
-        if(activeArea) {
-            document.getElementById('areaSummaryLine').style.display = 'flex';
-            document.getElementById('areaSummaryMoney').innerText = `C$ ${areaVal.toFixed(0)}`;
-        } else {
-            document.getElementById('areaSummaryLine').style.display = 'none';
-        }
-
-        // 历史记录过滤
-        const mF = document.getElementById('filterMonth').value, 
-              sF = document.getElementById('filterStart').value, 
-              eF = document.getElementById('filterEnd').value, 
-              qF = document.getElementById('filterSearch').value.toLowerCase();
-              
-        let filtered = logs.filter(l => {
-            if (!l.t) return false;
-            const ld = l.t.slice(0,10), lm = l.t.slice(0,7);
-            if(mF && lm !== mF) return false;
-            if(sF && ld < sF) return false;
-            if(eF && ld > eF) return false;
-            if(qF && !(l.note || '').toLowerCase().includes(qF)) return false;
-            return true;
-        });
-
-        let curSale = 0, curBuy = 0;
-        document.getElementById('logBody').innerHTML = filtered.slice().reverse().map(l => {
-            if(l.type && l.type.includes('销售')) curSale += l.amt || 0; 
-            else if(l.type && l.type.includes('进货')) curBuy += l.amt || 0;
-            return `<tr>
-                <td>${l.t ? l.t.slice(5,16).replace('T',' ') : ''}</td>
-                <td>${l.type || ''}: ${l.note || ''}</td>
-                <td>${l.q || 0}</td>
-                <td style="color:${l.type && l.type.includes('销售')?'green':'red'}">C$ ${(l.amt || 0).toFixed(1)}</td>
-                <td class="admin-only"><button onclick="if(confirm('确定删除? / ¿Eliminar?')){logs=logs.filter(x=>x.id!==${l.id});save();}">X</button></td>
-            </tr>`;
-        }).join('');
-        
-        document.getElementById('logFoot').innerHTML = `<tr style="background:#fff9c4;">
-            <td colspan="2">汇总/Resumen:</td>
-            <td>销售/Venta: C$ ${curSale.toFixed(1)}</td>
-            <td colspan="2">进货/Compra: C$ ${curBuy.toFixed(1)}</td>
-        </tr>`;
-
-        // 打印内容
-        document.getElementById('printContainer').innerHTML = ['总仓库/Almacén', '1号冰箱/Nevera 1', '2号冰箱/Nevera 2', '3号冰箱/Nevera 3'].map(a => {
-            const areaName = a.split('/')[0];
-            const list = stocks.filter(x => x.location === areaName).sort((a,b) => (a.cat || '').localeCompare(b.cat || ''));
-            return `<div class="print-area-title">${a}</div>
-                <table>
-                    <thead><tr><th>分类/Cat</th><th>产品/Prod</th><th>库存/Sist</th><th>实测/Real</th></tr></thead>
-                    <tbody>${list.map(s => `<tr><td>${s.cat || ''}</td><td>${s.name || ''} (${s.spec || ''})</td><td>${s.qty || 0}</td><td>____</td></tr>`).join('')}</tbody>
-                </table>`;
-        }).join('');
-    }
-
-    // ==================== 初始化 ====================
-    window.onload = () => {
-        updateAdminMode();
-        render();
-        initFirebase();
-        
-        // 每5分钟自动同步一次
-        autoSyncInterval = setInterval(() => {
-            if (firebaseLoaded && !syncInProgress) {
-                saveToCloud();
-            }
-        }, 5 * 60 * 1000);
-    };
-</script>
-</body>
-</html>
-
+        // 更新商品选择下拉框（按分类排序）
+        document.getElementById('mSelect').
