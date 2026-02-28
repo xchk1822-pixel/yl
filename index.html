@@ -608,7 +608,8 @@ function checkPassword(btn) {
     const sid = document.getElementById('moveS').value;
     const target = document.getElementById('moveT').value;
     const qty = parseInt(document.getElementById('moveQ').value);
-    
+    console.log("选择的ID:", sid);
+    console.log("所有商品:", stocks.map(x => ({id: x.id, name: x.name, spec: x.spec, qty: x.qty})));
     if (!sid) {
         alert("请选择要调拨的商品");
         return;
@@ -801,6 +802,7 @@ function checkPassword(btn) {
 </script>
 </body>
 </html>
+
 
 
 
