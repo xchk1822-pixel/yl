@@ -723,15 +723,21 @@ function doCheck(id) {
         if(activeCat !== "全部/Todo") displayStocks = displayStocks.filter(x => x.cat === activeCat);
         
         document.getElementById('stockBody').innerHTML = displayStocks.map(s => `
-            <tr>
-                <td><small>${s.cat}</small></td>
-                <td><b>${s.name}</b></td>
-                <td>${s.spec || ''}</td>
-                <td>C$ ${s.price.toFixed(1)}</td>
-                <td><b style="color:var(--main-red)">${s.qty}</b></td>
-                <td class="input-area"><input type="number" id="input-${s.id}" style="width:40px"> <button class="btn-red" onclick="doCheck(${s.id})">OK</button></td>
-            </tr>
-        `).join('');
+    <tr>
+        <td><small>${s.cat}</small></td>
+        <td><b>${s.name}</b></td>
+        <td>${s.spec || ''}</td>
+        <td>C$ ${s.price.toFixed(1)}</td>
+        <td><b style="color:var(--main-red)">${s.qty}</b></td>
+        <td class="input-area">
+            <input type="number" id="input-${s.id}" style="width:40px"> 
+            <button class="btn-red" onclick="doCheck(${s.id})">OK</button>
+        </td>
+        <td class="admin-only">
+            <button class="btn-danger" onclick="deleteStockItem(${s.id})" style="background:#d32f2f; color:white; border:none; padding:2px 8px; border-radius:4px;">删除</button>
+        </td>
+    </tr>
+`).join('');
 
         if(activeArea) {
             document.getElementById('areaSummaryLine').style.display = 'flex';
@@ -785,7 +791,17 @@ function doCheck(id) {
         // 渲染档案列表
         renderMasterList();
     }
-
+// 删除库存商品
+function deleteStockItem(id) {
+    if (!isAdmin) {
+        alert("只有管理员可删除");
+        return;
+    }
+    if (confirm("确定删除此商品？")) {
+        stocks = stocks.filter(item => item.id !== id);
+        save();
+    }
+}
     // ==================== 初始化 ====================
     window.onload = () => {
     loadLocalData();
@@ -806,6 +822,7 @@ function doCheck(id) {
 </script>
 </body>
 </html>
+
 
 
 
