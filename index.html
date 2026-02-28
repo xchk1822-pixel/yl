@@ -728,6 +728,16 @@ function doCheck(id) {
         // 渲染库存表
         let displayStocks = stocks.filter(x => x.location === activeArea);
         if(activeCat !== "全部/Todo") displayStocks = displayStocks.filter(x => x.cat === activeCat);
+        // 强制按ID分组，防止合并
+let uniqueStocks = [];
+let idMap = new Map();
+displayStocks.forEach(item => {
+    if (!idMap.has(item.id)) {
+        idMap.set(item.id, true);
+        uniqueStocks.push(item);
+    }
+});
+displayStocks = uniqueStocks;
         console.log("所有商品位置:", stocks.map(x => x.location));
 console.log("所有商品详情:", stocks.map(x => ({name: x.name, spec: x.spec, location: x.location, qty: x.qty})));
         console.log("displayStocks完整数据:", JSON.stringify(displayStocks));
@@ -829,6 +839,7 @@ window.onload = () => {
 </script>
 </body>
 </html>
+
 
 
 
