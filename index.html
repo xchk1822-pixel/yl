@@ -605,18 +605,68 @@ function checkPassword(btn) {
     }
 
     function execMove() {
-        const sid = document.getElementById('moveS').value, target = document.getElementById('moveT').value, qty = parseInt(document.getElementById('moveQ').value);
-        if (!sid || !qty || qty <= 0) return;
-        const s = stocks.find(x => x.id == sid);
-        if(s && qty <= s.qty) {
-            s.qty -= qty;
-            let ts = stocks.find(x => x.name === s.name && x.location === target && x.spec === s.spec);
-            if(ts) ts.qty += qty; else stocks.push({...s, id:Date.now(), qty, location:target});
-            logs.push({id:Date.now(), t:new Date().toISOString(), type:'调拨/Traslado', note:`To ${target}: ${s.name}`, q:qty, amt:0});
-            document.getElementById('moveQ').value = '';
-            save();
-        }
+    const sid = document.getElementById('moveS').value;
+    const target = document.getElementById('moveT').value;
+    const qty = parseInt(document.getElementById('moveQ').value);
+    
+    if (!sid) {
+        alert("请选择要调拨的商品");
+        return;
     }
+    if (!qty || qty <= 0) {
+        alert("请输入有效的数量");
+        return;
+    }
+    
+    const s = stocks.find(x => x.id == sid);
+    if (!s) {
+        alert("商品不存在");
+        return;
+    }
+    
+    if (qty > s.qty) {
+        alert(`库存不足！当前库存: ${s.qty}`);
+        return;
+    }
+    
+    // 扣减源商品库存
+    s.qty -= qty;
+    
+    // 在目标仓库查找相同品名+规格的商品
+    let ts = stocks.find(x => 
+        x.name === s.name && 
+        x.spec === s.spec && 
+        x.location === target
+    );
+    
+    if (ts) {
+        ts.qty += qty;
+    } else {
+        // 创建新商品，确保ID唯一
+        stocks.push({
+            id: Date.now(),
+            cat: s.cat,
+            name: s.name,
+            spec: s.spec,
+            qty: qty,
+            cost: s.cost,
+            price: s.price,
+            location: target
+        });
+    }
+    
+    logs.push({
+        id: Date.now(),
+        t: new Date().toISOString(),
+        type: '调拨/Traslado',
+        note: `从总仓库到 ${target}: ${s.name} ${s.spec}`,
+        q: qty,
+        amt: 0
+    });
+    
+    document.getElementById('moveQ').value = '';
+    save();
+}
 
     function doCheck(id) {
         const input = document.getElementById(`input-${id}`), real = parseInt(input.value), s = stocks.find(x => x.id === id);
@@ -751,4 +801,5 @@ function checkPassword(btn) {
 </script>
 </body>
 </html>
+
 
