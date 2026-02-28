@@ -175,11 +175,19 @@
     <div class="card no-print">
         <h3 id="areaTitle">请选择区域 / Seleccione Área</h3>
         <table id="stockTable">
-            <thead>
-                <tr><th>分类/Cat</th><th>品名/Producto</th><th>规格/Spec</th><th>售价/Precio</th><th>库存/Stock</th><th class="input-area">盘点/Venta</th></tr>
-            </thead>
-            <tbody id="stockBody"></tbody>
-        </table>
+    <thead>
+        <tr>
+            <th>分类/Cat</th>
+            <th>品名/Producto</th>
+            <th>规格/Spec</th>
+            <th>售价/Precio</th>
+            <th>库存/Stock</th>
+            <th class="input-area">盘点/Venta</th>
+            <th class="admin-only">操作/Acción</th>
+        </tr>
+    </thead>
+    <tbody id="stockBody"></tbody>
+</table>
         <div id="areaSummaryLine" class="stat-line" style="display:none;">
             <span>区域货值 / Valor Area:</span>
             <span id="areaSummaryMoney">C$ 0.00</span>
@@ -720,6 +728,7 @@ function doCheck(id) {
         // 渲染库存表
         let displayStocks = stocks.filter(x => x.location === activeArea);
         if(activeCat !== "全部/Todo") displayStocks = displayStocks.filter(x => x.cat === activeCat);
+        console.log("displayStocks完整数据:", JSON.stringify(displayStocks));
         console.log("过滤后的商品数量:", displayStocks.length);
 console.log("过滤后的商品:", displayStocks.map(x => ({name: x.name, spec: x.spec, qty: x.qty})));
         document.getElementById('stockBody').innerHTML = displayStocks.map(s => `
@@ -818,6 +827,7 @@ window.onload = () => {
 </script>
 </body>
 </html>
+
 
 
 
