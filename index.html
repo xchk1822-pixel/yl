@@ -587,7 +587,7 @@ function checkPassword(btn) {
         tempBillItems.forEach(item => {
             let s = stocks.find(x => x.name === item.name && x.location === '总仓库' && x.spec === item.spec);
             if(s) s.qty += item.qty;
-            else stocks.push({id:Date.now(), cat:item.cat, name:item.name, spec:item.spec, qty:item.qty, cost:item.cost, price:item.price, location:'总仓库'});
+            else stocks.push({id: Date.now() + Math.random(), cat:item.cat, name:item.name, spec:item.spec, qty:item.qty, cost:item.cost, price:item.price, location:'总仓库'});
             total += item.sub;
         });
         logs.push({id:Date.now(), t:new Date().toISOString(), type:'进货/Compra', note:`批量入库/Entrada`, q:tempBillItems.length, amt:total});
@@ -645,16 +645,15 @@ function checkPassword(btn) {
     } else {
         // 创建新商品，确保ID唯一
         stocks.push({
-            id: Date.now(),
-            cat: s.cat,
-            name: s.name,
-            spec: s.spec,
-            qty: qty,
-            cost: s.cost,
-            price: s.price,
-            location: target
-        });
-    }
+    id: Date.now() + Math.random(),
+    cat: s.cat,
+    name: s.name,
+    spec: s.spec,
+    qty: qty,
+    cost: s.cost,
+    price: s.price,
+    location: target
+});
     
     logs.push({
         id: Date.now(),
@@ -802,6 +801,7 @@ function checkPassword(btn) {
 </script>
 </body>
 </html>
+
 
 
 
