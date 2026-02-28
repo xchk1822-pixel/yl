@@ -52,6 +52,13 @@
             margin-left: 10px;
         }
 
+        .barcode-display {
+            font-family: monospace;
+            font-size: 11px;
+            color: #666;
+            margin-left: 5px;
+        }
+
         @media print {
             .no-print, header, .nav-bar, .fridge-grid, #transferBox, .input-area, .admin-only, .dash-board, .cat-bar, .filter-bar, #cloud-status { display: none !important; }
             .print-full-report { display: block !important; }
@@ -65,8 +72,8 @@
 <body>
 
 <header class="no-print">
-    <h1>中国年酒水饮料管理系统 / Gestión China</h1>
-    </header>
+    <h1>中国年酒水饮料管理系统</h1>
+</header>
 
 <div class="container">
     <div class="dash-board no-print">
@@ -95,7 +102,7 @@
         </div>
     </div>
 
-    <!-- 档案与分类 - 简化版：只有主类和规格 -->
+    <!-- 档案与分类 - 添加了条码 -->
     <div class="card admin-only no-print">
         <h3>🛠️ 档案与分类 / Maestro y Categorías</h3>
         
@@ -113,9 +120,8 @@
             <!-- 品名 -->
             <input type="text" id="mName" placeholder="品名/Nombre" style="padding:8px;" required>
             
-            <!-- 规格（手动输入，如 330ml易拉罐、500ml瓶装） -->
+            <!-- 规格 -->
             <input type="text" id="mSpec" placeholder="规格/Spec (例: 330ml)" style="padding:8px;">
-
             
             <input type="number" id="mCost" step="0.01" placeholder="成本/Costo" style="padding:8px;" value="0">
             <input type="number" id="mPrice" step="0.01" placeholder="售价/Precio" style="padding:8px;" value="0">
@@ -128,15 +134,16 @@
             <span>📌 示例: 可乐 330ml易拉罐 / 可乐 500ml瓶装 / 可乐 1L瓶装</span>
         </div>
         
-        <!-- 档案列表 -->
+        <!-- 档案列表 - 增加条码显示 -->
         <div id="masterListContainer" style="margin-top:20px; max-height:400px; overflow-y:auto;"></div>
         
         <hr>
         
-        <!-- 进货单据录入（完全保持原样） -->
+        <!-- 进货单据录入 - 增加扫码输入框 -->
         <h3>🧾 进货单据录入 / Registro de Factura</h3>
         <div class="bill-zone">
-            <div style="display:flex; gap:10px; margin-bottom:10px;">
+            <div style="display:flex; gap:10px; margin-bottom:10px; flex-wrap:wrap;">
+                <input type="text" id="scanBarcode" placeholder="扫描条码 / Escanear" style="flex:1; padding:8px;" onchange="scanBarcode()">
                 <select id="mSelect" style="flex:2; padding:8px;"></select>
                 <input type="number" id="inQty" placeholder="数/Cant" style="width:80px;">
                 <button class="btn btn-red" onclick="addItemToTempBill()">添加/Añadir</button>
@@ -152,7 +159,7 @@
         </div>
     </div>
 
-    <!-- 冰箱区域（完全保持原样） -->
+    <!-- 冰箱区域 -->
     <div class="fridge-grid no-print">
         <div class="fridge-card" id="btn-wh" onclick="selectArea('总仓库')">📦 总仓库/Almacén</div>
         <div class="fridge-card" id="btn-n1" onclick="selectArea('1号冰箱')">❄️ 1号/Nevera 1</div>
@@ -175,19 +182,19 @@
     <div class="card no-print">
         <h3 id="areaTitle">请选择区域 / Seleccione Área</h3>
         <table id="stockTable">
-    <thead>
-        <tr>
-            <th>分类/Cat</th>
-            <th>品名/Producto</th>
-            <th>规格/Spec</th>
-            <th>售价/Precio</th>
-            <th>库存/Stock</th>
-            <th class="input-area">盘点/Venta</th>
-            <th class="admin-only">操作/Acción</th>
-        </tr>
-    </thead>
-    <tbody id="stockBody"></tbody>
-</table>
+            <thead>
+                <tr>
+                    <th>分类/Cat</th>
+                    <th>品名/Producto</th>
+                    <th>规格/Spec</th>
+                    <th>售价/Precio</th>
+                    <th>库存/Stock</th>
+                    <th class="input-area">盘点/Venta</th>
+                    <th class="admin-only">操作/Acción</th>
+                </tr>
+            </thead>
+            <tbody id="stockBody"></tbody>
+        </table>
         <div id="areaSummaryLine" class="stat-line" style="display:none;">
             <span>区域货值 / Valor Area:</span>
             <span id="areaSummaryMoney">C$ 0.00</span>
@@ -251,6 +258,7 @@
         // 确保每个库存项都有必要字段
         stocks = stocks.map(s => ({
             id: s.id || Date.now(),
+            barcode: s.barcode || '',  // 保留条码
             cat: s.cat || "未分类",
             name: s.name || "未知",
             spec: s.spec || "",
@@ -382,61 +390,60 @@
     }
 
     // ==================== 权限登录 ====================
-function handleAuth() {
-    if(!isAdmin) { 
-        // 创建密码输入模态框
-        const modal = document.createElement('div');
-        modal.style.cssText = `
-            position: fixed;
-            top: 0;
-            left: 0;
-            width: 100%;
-            height: 100%;
-            background: rgba(0,0,0,0.5);
-            display: flex;
-            justify-content: center;
-            align-items: center;
-            z-index: 1000;
-        `;
-        
-        modal.innerHTML = `
-            <div style="background: white; padding: 20px; border-radius: 8px; width: 300px;">
-                <h3 style="margin-top: 0;">请输入管理员密码</h3>
-                <input type="password" id="adminPassInput" style="width: 100%; padding: 8px; margin: 10px 0; border: 1px solid #ddd; border-radius: 4px;" placeholder="密码" onkeypress="if(event.keyCode==13) checkPassword(this)">
-                <div style="display: flex; gap: 10px; justify-content: flex-end;">
-                    <button onclick="this.closest('div[style*=\\'position: fixed\\']').remove()" style="padding: 5px 15px;">取消</button>
-                    <button onclick="checkPassword(this)" style="background: var(--main-red); color: white; border: none; padding: 5px 15px; border-radius: 4px;">确认</button>
+    function handleAuth() {
+        if(!isAdmin) { 
+            const modal = document.createElement('div');
+            modal.style.cssText = `
+                position: fixed;
+                top: 0;
+                left: 0;
+                width: 100%;
+                height: 100%;
+                background: rgba(0,0,0,0.5);
+                display: flex;
+                justify-content: center;
+                align-items: center;
+                z-index: 1000;
+            `;
+            
+            modal.innerHTML = `
+                <div style="background: white; padding: 20px; border-radius: 8px; width: 300px;">
+                    <h3 style="margin-top: 0;">请输入管理员密码</h3>
+                    <input type="password" id="adminPassInput" style="width: 100%; padding: 8px; margin: 10px 0; border: 1px solid #ddd; border-radius: 4px;" placeholder="密码" onkeypress="if(event.keyCode==13) checkPassword(this)">
+                    <div style="display: flex; gap: 10px; justify-content: flex-end;">
+                        <button onclick="this.closest('div[style*=\\'position: fixed\\']').remove()" style="padding: 5px 15px;">取消</button>
+                        <button onclick="checkPassword(this)" style="background: var(--main-red); color: white; border: none; padding: 5px 15px; border-radius: 4px;">确认</button>
+                    </div>
                 </div>
-            </div>
-        `;
+            `;
+            
+            document.body.appendChild(modal);
+        } else {
+            isAdmin = false;
+            document.body.className = "";
+            document.getElementById('roleText').innerText = "👤 员工 / Empleado";
+            render();
+        }
+    }
+
+    // 添加密码检查函数
+    function checkPassword(btn) {
+        const input = document.getElementById('adminPassInput');
+        const modal = document.querySelector('div[style*="position: fixed"]');
         
-        document.body.appendChild(modal);
-    } else {
-        isAdmin = false;
-        document.body.className = "";
-        document.getElementById('roleText').innerText = "👤 员工 / Empleado";
-        render();
+        if(input.value === ADMIN_PASS) {
+            isAdmin = true;
+            document.body.className = "admin-mode";
+            document.getElementById('roleText').innerText = "👤 管理员 / Admin";
+            if(modal) modal.remove();
+            render();
+        } else {
+            alert("密码错误 / Contraseña incorrecta");
+            input.value = '';
+        }
     }
-}
 
-// 添加密码检查函数
-function checkPassword(btn) {
-    const input = document.getElementById('adminPassInput');
-    const modal = document.querySelector('div[style*="position: fixed"]');
-    
-    if(input.value === ADMIN_PASS) {
-        isAdmin = true;
-        document.body.className = "admin-mode";
-        document.getElementById('roleText').innerText = "👤 管理员 / Admin";
-        if(modal) modal.remove();
-        render();
-    } else {
-        alert("密码错误 / Contraseña incorrecta");
-        input.value = '';
-    }
-}
-
-    // ==================== 保存档案（简化版）====================
+    // ==================== 保存档案（带条码）====================
     function saveMaster() {
         if (!isAdmin) {
             alert("只有管理员可操作 / Solo Admin");
@@ -458,6 +465,9 @@ function checkPassword(btn) {
             return;
         }
         
+        // 生成8位随机条码
+        const barcode = Math.floor(10000000 + Math.random() * 90000000).toString();
+        
         // 检查是否已存在相同品名+规格
         const existing = master.find(m => 
             m.name === name && 
@@ -466,7 +476,7 @@ function checkPassword(btn) {
         );
         
         if (existing) {
-            if (confirm(`品名 "${name} ${spec}" 已存在，是否更新成本和售价？`)) {
+            if (confirm(`商品 "${name} ${spec}" 已存在，是否更新成本和售价？`)) {
                 existing.cost = cost;
                 existing.price = price;
                 save();
@@ -474,17 +484,19 @@ function checkPassword(btn) {
                 return;
             }
         } else {
-          master.push({
-    id: Date.now(),
-    code: name + '|' + spec,  // 加上这一行
-    cat: mainCat, 
-    name: name, 
-    spec: spec, 
-    cost: cost, 
-    price: price
-});  
+            master.push({
+                id: Date.now(),
+                barcode: barcode,  // 添加条码
+                code: name + '|' + spec,
+                cat: mainCat, 
+                name: name, 
+                spec: spec, 
+                cost: cost, 
+                price: price
+            });
             save();
             clearMasterInputs();
+            alert(`商品已保存，条码: ${barcode}`);
         }
     }
 
@@ -497,19 +509,31 @@ function checkPassword(btn) {
     }
 
     function editMasterItem(id) {
-        if (!isAdmin) {
-            alert("只有管理员可操作 / Solo Admin");
+    if (!isAdmin) {
+        alert("只有管理员可操作 / Solo Admin");
+        return;
+    }
+    const item = master.find(m => m.id === id);
+    if (!item) return;
+    
+    // 先修改条码
+    const newBarcode = prompt("修改条码 (留空则不变):", item.barcode || '');
+    if (newBarcode !== null && newBarcode !== item.barcode) {
+        // 检查条码是否已被其他商品使用
+        const existing = master.find(m => m.barcode === newBarcode && m.id !== id);
+        if (existing) {
+            alert(`条码 ${newBarcode} 已被商品 "${existing.name}" 使用`);
             return;
         }
-        const item = master.find(m => m.id === id);
-        if (!item) return;
-        
-        document.getElementById('mMainCat').value = item.cat || '饮品';
-        document.getElementById('mName').value = item.name || '';
-        document.getElementById('mSpec').value = item.spec || '';
-        document.getElementById('mCost').value = item.cost || 0;
-        document.getElementById('mPrice').value = item.price || 0;
+        item.barcode = newBarcode;
     }
+    
+    document.getElementById('mMainCat').value = item.cat || '饮品';
+    document.getElementById('mName').value = item.name || '';
+    document.getElementById('mSpec').value = item.spec || '';
+    document.getElementById('mCost').value = item.cost || 0;
+    document.getElementById('mPrice').value = item.price || 0;
+}
 
     function deleteMasterItem(id) {
         if (!isAdmin) {
@@ -536,6 +560,7 @@ function checkPassword(btn) {
                 <table style="width:100%; font-size:12px;">
                     <thead style="background:#f8f8f8; position:sticky; top:0;">
                         <tr>
+                            <th>条码/Barcode</th>
                             <th>分类/Cat</th>
                             <th>品名/Nombre</th>
                             <th>规格/Spec</th>
@@ -547,6 +572,7 @@ function checkPassword(btn) {
                     <tbody>
                         ${sortedMaster.map(item => `
                             <tr>
+                                <td><span class="barcode-display">${item.barcode || '无'}</span></td>
                                 <td>${item.cat || ''}</td>
                                 <td>${item.name || ''}</td>
                                 <td>${item.spec || ''}</td>
@@ -562,6 +588,23 @@ function checkPassword(btn) {
                 </table>
             </div>
         `;
+    }
+
+    // ==================== 扫码功能 ====================
+    function scanBarcode() {
+        const barcode = document.getElementById('scanBarcode').value.trim();
+        if (!barcode) return;
+        
+        // 在master中查找条码
+        const item = master.find(m => m.barcode === barcode);
+        if (item) {
+            document.getElementById('mSelect').value = item.id;
+            document.getElementById('scanBarcode').value = '';
+            document.getElementById('inQty').focus();
+        } else {
+            alert("未找到此条码的商品 / Producto no encontrado");
+            document.getElementById('scanBarcode').value = '';
+        }
     }
 
     // ==================== 进货功能 ====================
@@ -593,9 +636,23 @@ function checkPassword(btn) {
         if(!tempBillItems.length) return;
         let total = 0;
         tempBillItems.forEach(item => {
-            let s = stocks.find(x => x.name === item.name && x.location === '总仓库' && x.spec === item.spec);
-            if(s) s.qty += item.qty;
-            else stocks.push({id: Date.now() + Math.random(), cat:item.cat, name:item.name, spec:item.spec, qty:item.qty, cost:item.cost, price:item.price, location:'总仓库'});
+            // 查找库存时用条码，确保唯一
+            let s = stocks.find(x => x.barcode === item.barcode && x.location === '总仓库');
+            if(s) {
+                s.qty += item.qty;
+            } else {
+                stocks.push({
+                    id: Date.now() + Math.random(),
+                    barcode: item.barcode,  // 保存条码
+                    cat: item.cat,
+                    name: item.name,
+                    spec: item.spec,
+                    qty: item.qty,
+                    cost: item.cost,
+                    price: item.price,
+                    location: '总仓库'
+                });
+            }
             total += item.sub;
         });
         logs.push({id:Date.now(), t:new Date().toISOString(), type:'进货/Compra', note:`批量入库/Entrada`, q:tempBillItems.length, amt:total});
@@ -613,72 +670,70 @@ function checkPassword(btn) {
     }
 
     function execMove() {
-    const sid = document.getElementById('moveS').value;
-    const target = document.getElementById('moveT').value;
-    const qty = parseInt(document.getElementById('moveQ').value);
-    console.log("选择的ID:", sid);
-    console.log("所有商品:", JSON.stringify(stocks.map(x => ({id: x.id, name: x.name, spec: x.spec, qty: x.qty}))));
-    if (!sid) {
-        alert("请选择要调拨的商品");
-        return;
-    }
-    if (!qty || qty <= 0) {
-        alert("请输入有效的数量");
-        return;
-    }
-    
-    const s = stocks.find(x => x.id == sid);console.log("源商品:", s);
-    if (!s) {
-        alert("商品不存在");
-        return;
-    }
-    
-    if (qty > s.qty) {
-        alert(`库存不足！当前库存: ${s.qty}`);
-        return;
-    }
-    
-    // 扣减源商品库存
-    s.qty -= qty;
-    
-    // 在目标仓库查找相同品名+规格的商品
-    // 严格匹配：品名必须完全一致
-let ts = stocks.find(x => 
-    x.name === s.name && 
-    x.spec === s.spec && 
-    x.location === target
-);
-    
-    if (ts) {
-    ts.qty += qty;
-} else {
-    // 创建新商品，确保ID唯一
-    stocks.push({
-        id: Date.now() + Math.random(),
-        cat: s.cat,
-        name: s.name,
-        spec: s.spec,
-        qty: qty,
-        cost: s.cost,
-        price: s.price,
-        location: target
-    });
-}
+        const sid = document.getElementById('moveS').value;
+        const target = document.getElementById('moveT').value;
+        const qty = parseInt(document.getElementById('moveQ').value);
+        
+        if (!sid) {
+            alert("请选择要调拨的商品");
+            return;
+        }
+        if (!qty || qty <= 0) {
+            alert("请输入有效的数量");
+            return;
+        }
+        
+        const s = stocks.find(x => x.id == sid);
+        if (!s) {
+            alert("商品不存在");
+            return;
+        }
+        
+        if (qty > s.qty) {
+            alert(`库存不足！当前库存: ${s.qty}`);
+            return;
+        }
+        
+        // 扣减源商品库存
+        s.qty -= qty;
+        
+        // 在目标仓库查找相同条码的商品（用条码匹配，绝对唯一）
+        let ts = stocks.find(x => 
+            x.barcode === s.barcode && 
+            x.location === target
+        );
+        
+        if (ts) {
+            ts.qty += qty;
+        } else {
+            // 创建新商品，保存条码
+            stocks.push({
+                id: Date.now() + Math.random(),
+                barcode: s.barcode,
+                cat: s.cat,
+                name: s.name,
+                spec: s.spec,
+                qty: qty,
+                cost: s.cost,
+                price: s.price,
+                location: target
+            });
+        }
 
-logs.push({
-    id: Date.now(),
-    t: new Date().toISOString(),
-    type: '调拨/Traslado',
-    note: `从总仓库到 ${target}: ${s.name} ${s.spec}`,
-    q: qty,
-    amt: 0
-});
+        logs.push({
+            id: Date.now(),
+            t: new Date().toISOString(),
+            type: '调拨/Traslado',
+            note: `从总仓库到 ${target}: ${s.name} ${s.spec}`,
+            q: qty,
+            amt: 0
+        });
 
-document.getElementById('moveQ').value = '';
-save();
-}
+        document.getElementById('moveQ').value = '';
+        save();
+    }
 
-function doCheck(id) {
+    function doCheck(id) {
         const input = document.getElementById(`input-${id}`), real = parseInt(input.value), s = stocks.find(x => x.id === id);
         if(!s) return;
         if(isNaN(real) || real < 0 || real > s.qty) return;
@@ -701,7 +756,7 @@ function doCheck(id) {
         
         // 更新商品选择下拉框（显示品名+规格）
         document.getElementById('mSelect').innerHTML = [...master].sort((a,b)=> (a.cat || '').localeCompare(b.cat || '')).map(m => 
-            `<option value="${m.id}">[${m.cat}] ${m.name} ${m.spec}</option>`
+            `<option value="${m.id}">[${m.cat}] ${m.name} ${m.spec} (条码:${m.barcode || '无'})</option>`
         ).join('');
         
         // 更新调拨下拉框
@@ -730,37 +785,32 @@ function doCheck(id) {
         // 渲染库存表
         let displayStocks = stocks.filter(x => x.location === activeArea);
         if(activeCat !== "全部/Todo") displayStocks = displayStocks.filter(x => x.cat === activeCat);
-        // 强制按ID分组，防止合并
-let uniqueStocks = [];
-let idMap = new Map();
-displayStocks.forEach(item => {
-    if (!idMap.has(item.id)) {
-        idMap.set(item.id, true);
-        uniqueStocks.push(item);
-    }
-});
-displayStocks = uniqueStocks;
-        console.log("所有商品位置:", stocks.map(x => x.location));
-console.log("所有商品详情:", stocks.map(x => ({name: x.name, spec: x.spec, location: x.location, qty: x.qty})));
-        console.log("displayStocks完整数据:", JSON.stringify(displayStocks));
-        console.log("过滤后的商品数量:", displayStocks.length);
-console.log("过滤后的商品:", displayStocks.map(x => ({name: x.name, spec: x.spec, qty: x.qty})));
+        
+        // 强制按条码分组（条码才是唯一标识）
+        let barcodeMap = new Map();
+        displayStocks.forEach(item => {
+            if (!barcodeMap.has(item.barcode)) {
+                barcodeMap.set(item.barcode, item);
+            }
+        });
+        displayStocks = Array.from(barcodeMap.values());
+        
         document.getElementById('stockBody').innerHTML = displayStocks.map(s => `
-    <tr>
-        <td><small>${s.cat || ''}</small></td>
-        <td><b>${s.name || ''}</b></td>
-        <td>${s.spec || ''}</td>
-        <td>C$ ${(s.price || 0).toFixed(1)}</td>
-        <td><b style="color:var(--main-red)">${s.qty || 0}</b></td>
-        <td class="input-area">
-            <input type="number" id="input-${s.id}" style="width:40px"> 
-            <button class="btn-red" onclick="doCheck(${s.id})">OK</button>
-        </td>
-        <td class="admin-only">
-            <button class="btn-danger" onclick="deleteStockItem(${s.id})" style="background:#d32f2f; color:white; border:none; padding:2px 8px; border-radius:4px;">删除</button>
-        </td>
-    </tr>
-`).join('');
+            <tr>
+                <td><small>${s.cat || ''}</small></td>
+                <td><b>${s.name || ''}</b> <span class="barcode-display">[${s.barcode || ''}]</span></td>
+                <td>${s.spec || ''}</td>
+                <td>C$ ${(s.price || 0).toFixed(1)}</td>
+                <td><b style="color:var(--main-red)">${s.qty || 0}</b></td>
+                <td class="input-area">
+                    <input type="number" id="input-${s.id}" style="width:40px"> 
+                    <button class="btn-red" onclick="doCheck(${s.id})">OK</button>
+                </td>
+                <td class="admin-only">
+                    <button class="btn-danger" onclick="deleteStockItem(${s.id})" style="background:#d32f2f; color:white; border:none; padding:2px 8px; border-radius:4px;">删除</button>
+                </td>
+            </tr>
+        `).join('');
 
         if(activeArea) {
             document.getElementById('areaSummaryLine').style.display = 'flex';
@@ -806,57 +856,40 @@ console.log("过滤后的商品:", displayStocks.map(x => ({name: x.name, spec: 
             const list = stocks.filter(x => x.location === areaName).sort((a,b) => (a.cat || '').localeCompare(b.cat || ''));
             return `<div class="print-area-title">${a}</div>
                 <table>
-                    <thead><tr><th>分类/Cat</th><th>产品/Prod</th><th>规格/Spec</th><th>库存/Sist</th><th>实测/Real</th></tr></thead>
-                    <tbody>${list.map(s => `<tr><td>${s.cat}</td><td>${s.name}</td><td>${s.spec || ''}</td><td>${s.qty}</td><td>____</td></tr>`).join('')}</tbody>
+                    <thead><tr><th>条码</th><th>分类/Cat</th><th>产品/Prod</th><th>规格/Spec</th><th>库存/Sist</th><th>实测/Real</th></tr></thead>
+                    <tbody>${list.map(s => `<tr><td>${s.barcode || ''}</td><td>${s.cat}</td><td>${s.name}</td><td>${s.spec || ''}</td><td>${s.qty}</td><td>____</td></tr>`).join('')}</tbody>
                 </table>`;
         }).join('');
         
         // 渲染档案列表
         renderMasterList();
     }
-// 删除库存商品
-function deleteStockItem(id) {
-    if (!isAdmin) {
-        alert("只有管理员可删除");
-        return;
-    }
-    if (confirm("确定删除此商品？")) {
-        stocks = stocks.filter(item => item.id !== id);
-        save();
-    }
-}
-  // ==================== 初始化 ====================
-window.onload = () => {
-    loadLocalData();
-    render();
-    initFirebase();  // 重新启用云端
-    
-    // 每5分钟自动同步一次
-    autoSyncInterval = setInterval(() => {
-        if (firebaseLoaded && !syncInProgress) {
-            saveToCloud();
+
+    // 删除库存商品
+    function deleteStockItem(id) {
+        if (!isAdmin) {
+            alert("只有管理员可删除");
+            return;
         }
-    }, 5 * 60 * 1000);
-};  
+        if (confirm("确定删除此商品？")) {
+            stocks = stocks.filter(item => item.id !== id);
+            save();
+        }
+    }
+
+    // ==================== 初始化 ====================
+    window.onload = () => {
+        loadLocalData();
+        render();
+        initFirebase();
+        
+        // 每5分钟自动同步一次
+        autoSyncInterval = setInterval(() => {
+            if (firebaseLoaded && !syncInProgress) {
+                saveToCloud();
+            }
+        }, 5 * 60 * 1000);
+    };
 </script>
 </body>
 </html>
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
