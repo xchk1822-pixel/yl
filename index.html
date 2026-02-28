@@ -667,7 +667,9 @@ logs.push({
 
 document.getElementById('moveQ').value = '';
 save();
-    function doCheck(id) {
+}
+
+function doCheck(id) {
         const input = document.getElementById(`input-${id}`), real = parseInt(input.value), s = stocks.find(x => x.id === id);
         if(!s) return;
         if(isNaN(real) || real < 0 || real > s.qty) return;
@@ -800,6 +802,7 @@ save();
 </script>
 </body>
 </html>
+
 
 
 
