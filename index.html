@@ -618,7 +618,7 @@ function checkPassword(btn) {
         return;
     }
     
-    const s = stocks.find(x => x.id == sid);
+    const s = stocks.find(x => x.id == sid);console.log("源商品:", s);
     if (!s) {
         alert("商品不存在");
         return;
@@ -801,5 +801,6 @@ function checkPassword(btn) {
 </script>
 </body>
 </html>
+
 
 
