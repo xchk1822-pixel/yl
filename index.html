@@ -467,14 +467,15 @@ function checkPassword(btn) {
                 return;
             }
         } else {
-            master.push({
-                id: Date.now(), 
-                cat: mainCat, 
-                name: name, 
-                spec: spec, 
-                cost: cost, 
-                price: price
-            });
+          master.push({
+    id: Date.now(),
+    code: name + '|' + spec,  // 加上这一行
+    cat: mainCat, 
+    name: name, 
+    spec: spec, 
+    cost: cost, 
+    price: price
+});  
             save();
             clearMasterInputs();
         }
@@ -635,10 +636,9 @@ function checkPassword(btn) {
     
     // 在目标仓库查找相同品名+规格的商品
     let ts = stocks.find(x => 
-        x.name === s.name && 
-        x.spec === s.spec && 
-        x.location === target
-    );
+    x.code === s.code && 
+    x.location === target
+);
     
     if (ts) {
     ts.qty += qty;
@@ -822,6 +822,7 @@ function deleteStockItem(id) {
 </script>
 </body>
 </html>
+
 
 
 
