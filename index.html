@@ -107,27 +107,31 @@
         <h3>🛠️ 档案与分类 / Maestro y Categorías</h3>
         
         <!-- 简化输入区：主类下拉 + 品名 + 规格 + 成本 + 售价 -->
-        <div style="display:grid; grid-template-columns:repeat(auto-fit, minmax(120px, 1fr)); gap:8px; margin-bottom:15px;">
-            <!-- 主类下拉 -->
-            <select id="mMainCat" style="padding:8px;">
-                <option value="饮品" selected>饮品/Bebidas</option>
-                <option value="酒类">酒类/cerveza</option>
-                <option value="食材">食材/Alimentos</option>
-                <option value="调料">调料/Condimentos</option>
-                <option value="其他">其他/Otros</option>
-            </select>
-            
-            <!-- 品名 -->
-            <input type="text" id="mName" placeholder="品名/Nombre" style="padding:8px;" required>
-            
-            <!-- 规格 -->
-            <input type="text" id="mSpec" placeholder="规格/Spec (例: 330ml)" style="padding:8px;">
-            
-            <input type="number" id="mCost" step="0.01" placeholder="成本/Costo" style="padding:8px;" value="0">
-            <input type="number" id="mPrice" step="0.01" placeholder="售价/Precio" style="padding:8px;" value="0">
-            
-            <button class="btn btn-red" onclick="saveMaster()" style="grid-column:span 2;">保存 / Guardar</button>
-        </div>
+        <!-- 简化输入区：主类下拉 + 品名 + 规格 + 成本 + 售价 + 条码 -->
+<div style="display:grid; grid-template-columns:repeat(auto-fit, minmax(100px, 1fr)); gap:8px; margin-bottom:15px;">
+    <!-- 主类下拉 -->
+    <select id="mMainCat" style="padding:8px;">
+        <option value="饮品" selected>饮品/Bebidas</option>
+        <option value="酒类">酒类/cerveza</option>
+        <option value="食材">食材/Alimentos</option>
+        <option value="调料">调料/Condimentos</option>
+        <option value="其他">其他/Otros</option>
+    </select>
+    
+    <!-- 条码输入 -->
+    <input type="text" id="mBarcode" placeholder="条码/Barcode" style="padding:8px;" value="">
+    
+    <!-- 品名 -->
+    <input type="text" id="mName" placeholder="品名/Nombre" style="padding:8px;" required>
+    
+    <!-- 规格 -->
+    <input type="text" id="mSpec" placeholder="规格/Spec (例: 330ml)" style="padding:8px;">
+    
+    <input type="number" id="mCost" step="0.01" placeholder="成本/Costo" style="padding:8px;" value="0">
+    <input type="number" id="mPrice" step="0.01" placeholder="售价/Precio" style="padding:8px;" value="0">
+    
+    <button class="btn btn-red" onclick="saveMaster()" style="grid-column:span 3;">保存 / Guardar</button>
+</div>
         
         <!-- 规格快速提示 -->
         <div style="margin-top:5px; font-size:12px; color:#666;">
@@ -465,8 +469,11 @@
             return;
         }
         
-        // 生成8位随机条码
-        const barcode = Math.floor(10000000 + Math.random() * 90000000).toString();
+        // 获取条码输入框的值，如果没有输入则自动生成
+let barcode = document.getElementById('mBarcode').value.trim();
+if (!barcode) {
+    barcode = Math.floor(10000000 + Math.random() * 90000000).toString();
+}
         
         // 检查是否已存在相同品名+规格
         const existing = master.find(m => 
@@ -502,6 +509,7 @@
 
     function clearMasterInputs() {
         document.getElementById('mMainCat').value = '饮品';
+        document.getElementById('mBarcode').value = '';
         document.getElementById('mName').value = '';
         document.getElementById('mSpec').value = '';
         document.getElementById('mCost').value = '';
@@ -527,7 +535,8 @@
         }
         item.barcode = newBarcode;
     }
-    
+
+    document.getElementById('mBarcode').value = item.barcode || '';
     document.getElementById('mMainCat').value = item.cat || '饮品';
     document.getElementById('mName').value = item.name || '';
     document.getElementById('mSpec').value = item.spec || '';
@@ -893,3 +902,4 @@
 </script>
 </body>
 </html>
+
