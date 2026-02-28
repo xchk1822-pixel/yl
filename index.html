@@ -720,7 +720,8 @@ function doCheck(id) {
         // 渲染库存表
         let displayStocks = stocks.filter(x => x.location === activeArea);
         if(activeCat !== "全部/Todo") displayStocks = displayStocks.filter(x => x.cat === activeCat);
-        
+        console.log("过滤后的商品数量:", displayStocks.length);
+console.log("过滤后的商品:", displayStocks.map(x => ({name: x.name, spec: x.spec, qty: x.qty})));
         document.getElementById('stockBody').innerHTML = displayStocks.map(s => `
     <tr>
         <td><small>${s.cat}</small></td>
@@ -817,6 +818,7 @@ window.onload = () => {
 </script>
 </body>
 </html>
+
 
 
 
