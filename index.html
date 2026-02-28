@@ -641,33 +641,32 @@ function checkPassword(btn) {
     );
     
     if (ts) {
-        ts.qty += qty;
-    } else {
-        // 创建新商品，确保ID唯一
-        stocks.push({
-    id: Date.now() + Math.random(),
-    cat: s.cat,
-    name: s.name,
-    spec: s.spec,
-    qty: qty,
-    cost: s.cost,
-    price: s.price,
-    location: target
-});
-    
-    logs.push({
-        id: Date.now(),
-        t: new Date().toISOString(),
-        type: '调拨/Traslado',
-        note: `从总仓库到 ${target}: ${s.name} ${s.spec}`,
-        q: qty,
-        amt: 0
+    ts.qty += qty;
+} else {
+    // 创建新商品，确保ID唯一
+    stocks.push({
+        id: Date.now() + Math.random(),
+        cat: s.cat,
+        name: s.name,
+        spec: s.spec,
+        qty: qty,
+        cost: s.cost,
+        price: s.price,
+        location: target
     });
-    
-    document.getElementById('moveQ').value = '';
-    save();
 }
 
+logs.push({
+    id: Date.now(),
+    t: new Date().toISOString(),
+    type: '调拨/Traslado',
+    note: `从总仓库到 ${target}: ${s.name} ${s.spec}`,
+    q: qty,
+    amt: 0
+});
+
+document.getElementById('moveQ').value = '';
+save();
     function doCheck(id) {
         const input = document.getElementById(`input-${id}`), real = parseInt(input.value), s = stocks.find(x => x.id === id);
         if(!s) return;
@@ -801,6 +800,7 @@ function checkPassword(btn) {
 </script>
 </body>
 </html>
+
 
 
 
