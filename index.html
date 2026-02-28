@@ -788,20 +788,25 @@ function doCheck(id) {
 
     // ==================== 初始化 ====================
     window.onload = () => {
-        loadLocalData();
-        render();
-        initFirebase();
-        
-        // 每5分钟自动同步一次
-        autoSyncInterval = setInterval(() => {
-            if (firebaseLoaded && !syncInProgress) {
-                saveToCloud();
-            }
-        }, 5 * 60 * 1000);
-    };
+    loadLocalData();
+    render();
+    
+    // 完全禁用云端连接
+    firebaseLoaded = false;  // 直接设置连接状态为false
+    
+    // 不再调用 initFirebase();
+    
+    // 每5分钟自动同步一次（但不会执行，因为 firebaseLoaded = false）
+    autoSyncInterval = setInterval(() => {
+        if (firebaseLoaded && !syncInProgress) {
+            saveToCloud();
+        }
+    }, 5 * 60 * 1000);
+};
 </script>
 </body>
 </html>
+
 
 
 
