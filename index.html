@@ -470,55 +470,87 @@
 
     // ==================== 云端同步函数 ====================
     async function saveToCloud() {
-        if (!firebaseLoaded || !firestore || syncInProgress) return false;
-        
-        try {
-            syncInProgress = true;
-            await firestore.collection('inventoryData').doc('mainData').set({
-                master: master,
-                stocks: stocks,
-                logs: logs,
-                lastSync: new Date().toISOString()
-            });
-            document.getElementById('cloud-status').innerHTML = '☁️ 云端: ✅ 已同步 ' + new Date().toLocaleTimeString();
-            return true;
-        } catch (error) {
-            console.error('保存到云端失败:', error);
-            document.getElementById('cloud-status').innerHTML = '☁️ 云端: ⚠️ 同步失败';
-            return false;
-        } finally {
-            syncInProgress = false;
-        }
+    if (!firebaseLoaded || !firestore || syncInProgress) return false;
+    
+    try {
+        syncInProgress = true;
+        const syncTime = new Date().toISOString();
+        await firestore.collection('inventoryData').doc('mainData').set({
+            master: master,
+            stocks: stocks,
+            logs: logs,
+            lastSync: syncTime
+        });
+        // 保存本地同步时间
+        localStorage.setItem('cn_lastSync', syncTime);
+        document.getElementById('cloud-status').innerHTML = '☁️ 云端: ✅ 已同步 ' + new Date().toLocaleTimeString();
+        return true;
+    } catch (error) {
+        console.error('保存到云端失败:', error);
+        document.getElementById('cloud-status').innerHTML = '☁️ 云端: ⚠️ 同步失败';
+        return false;
+    } finally {
+        syncInProgress = false;
     }
+}
 
     async function loadFromCloud() {
-        if (!firebaseLoaded || !firestore) return false;
+    if (!firebaseLoaded || !firestore) return false;
+    
+    try {
+        const doc = await firestore.collection('inventoryData').doc('mainData').get();
         
-        try {
-            const doc = await firestore.collection('inventoryData').doc('mainData').get();
+        if (doc.exists) {
+            const cloudData = doc.data();
             
-            if (doc.exists) {
-                const cloudData = doc.data();
-                
-                loadLocalData();
-                
-                if (master.length === 0 && cloudData.master) master = cloudData.master;
-                if (stocks.length === 0 && cloudData.stocks) stocks = cloudData.stocks;
-                if (logs.length === 0 && cloudData.logs) logs = cloudData.logs;
-                
-                document.getElementById('cloud-status').innerHTML = '☁️ 云端: ✅ 已连接';
+            // 加载本地数据
+            const localMaster = JSON.parse(localStorage.getItem('cn_m21')) || [];
+            const localStocks = JSON.parse(localStorage.getItem('cn_s21')) || [];
+            const localLogs = JSON.parse(localStorage.getItem('cn_l21')) || [];
+            
+            // 获取云端最后同步时间
+            const cloudLastSync = cloudData.lastSync ? new Date(cloudData.lastSync) : new Date(0);
+            
+            // 获取本地最后修改时间
+            let localLastSync = localStorage.getItem('cn_lastSync');
+            localLastSync = localLastSync ? new Date(localLastSync) : new Date(0);
+            
+            // 如果云端更新，用云端的
+            if (cloudLastSync > localLastSync) {
+                master = cloudData.master || [];
+                stocks = cloudData.stocks || [];
+                logs = cloudData.logs || [];
+                document.getElementById('cloud-status').innerHTML = '☁️ 云端: ⬇️ 已下载最新';
             } else {
-                if (master.length > 0 || stocks.length > 0 || logs.length > 0) {
-                    await saveToCloud();
-                }
+                // 如果本地更新，用本地的并上传
+                master = localMaster;
+                stocks = localStocks;
+                logs = localLogs;
+                await saveToCloud(); // 上传本地数据到云端
+                document.getElementById('cloud-status').innerHTML = '☁️ 云端: ⬆️ 已上传本地';
             }
-            render();
-            return true;
-        } catch (error) {
-            console.error('从云端加载失败:', error);
-            return false;
+            
+            // 保存到localStorage
+            localStorage.setItem('cn_m21', JSON.stringify(master));
+            localStorage.setItem('cn_s21', JSON.stringify(stocks));
+            localStorage.setItem('cn_l21', JSON.stringify(logs));
+            localStorage.setItem('cn_lastSync', new Date().toISOString());
+            
+        } else {
+            // 云端没有数据，上传本地
+            if (master.length > 0 || stocks.length > 0 || logs.length > 0) {
+                await saveToCloud();
+                document.getElementById('cloud-status').innerHTML = '☁️ 云端: ⬆️ 首次上传';
+            }
         }
+        render();
+        renderStockSummary();
+        return true;
+    } catch (error) {
+        console.error('从云端加载失败:', error);
+        return false;
     }
+}
 
     // ==================== 保存数据（本地+云端）====================
     function save() {
@@ -1304,6 +1336,7 @@
 </script>
 </body>
 </html>
+
 
 
 
