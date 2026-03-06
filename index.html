@@ -393,6 +393,18 @@
     let syncInProgress = false;
     let autoSyncInterval = null;
 
+    // ==================== 时间处理函数 ====================
+    function getNicaraguaTime() {
+        const now = new Date();
+        // 尼加拉瓜是 UTC-6
+        const nicaraguaTime = new Date(now.getTime() - (6 * 60 * 60 * 1000));
+        return nicaraguaTime;
+    }
+
+    function getNicaraguaISOString() {
+        return getNicaraguaTime().toISOString();
+    }
+
     // ==================== 加载本地数据 ====================
     function loadLocalData() {
         master = JSON.parse(localStorage.getItem('cn_m21')) || [];
@@ -474,7 +486,7 @@
     
     try {
         syncInProgress = true;
-        const syncTime = new Date().toISOString();
+        const syncTime = getNicaraguaISOString();  // 使用尼加拉瓜时间
         await firestore.collection('inventoryData').doc('mainData').set({
             master: master,
             stocks: stocks,
@@ -1336,6 +1348,7 @@
 </script>
 </body>
 </html>
+
 
 
 
