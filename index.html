@@ -175,7 +175,7 @@
                     </div>
                 </div>
                 <div style="background:#e8f5e9; padding:10px; border-radius:8px; border-left:4px solid #2e7d32;">
-                    <div style="font-size:12px; color:#666;">食材</div>
+                    <div style="font-size:12px; color:#666;">拉面</div>
                     <div style="font-size:16px; font-weight:bold;" id="categoryFoodAmount">C$ 0</div>
                     <div style="font-size:12px; display:flex; justify-content:space-between;">
                         <span id="categoryFoodQty">0份</span>
@@ -183,7 +183,7 @@
                     </div>
                 </div>
                 <div style="background:#e3f2fd; padding:10px; border-radius:8px; border-left:4px solid #1565c0;">
-                    <div style="font-size:12px; color:#666;">其他</div>
+                    <div style="font-size:12px; color:#666;">酱油</div>
                     <div style="font-size:16px; font-weight:bold;" id="categoryOtherAmount">C$ 0</div>
                     <div style="font-size:12px; display:flex; justify-content:space-between;">
                         <span id="categoryOtherQty">0</span>
@@ -215,7 +215,45 @@
         </div>
     </div>
 </div>
-
+    <!-- 库存总览（方便进货） -->
+    <div class="card no-print" style="margin-bottom:15px; background:#fff; border-left:5px solid #2e7d32;">
+        <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:10px;">
+            <h3 style="margin:0; color:#2e7d32;">📦 库存总览（仓库+冰箱）</h3>
+            <span style="background:#2e7d32; color:white; padding:3px 10px; border-radius:20px; font-size:12px;">共 <span id="totalStockItems">0</span> 种商品</span>
+        </div>
+        
+        <!-- 搜索框 -->
+        <div style="margin-bottom:10px;">
+            <input type="text" id="stockSearchInput" placeholder="搜索商品名称..." style="width:100%; padding:8px; border:1px solid #ddd; border-radius:4px;" onkeyup="filterStockSummary()">
+        </div>
+        
+        <!-- 库存列表 -->
+        <div style="max-height:400px; overflow-y:auto; border:1px solid #eee; border-radius:8px;">
+            <table style="width:100%; font-size:14px;">
+                <thead style="background:#f5f5f5; position:sticky; top:0;">
+                    <tr>
+                        <th>商品名称</th>
+                        <th>规格</th>
+                        <th>分类</th>
+                        <th>仓库</th>
+                        <th>1号冰箱</th>
+                        <th>2号冰箱</th>
+                        <th>3号冰箱</th>
+                        <th>总库存</th>
+                        <th>建议进货</th>
+                    </tr>
+                </thead>
+                <tbody id="stockSummaryBody"></tbody>
+            </table>
+        </div>
+        
+        <!-- 底部统计 -->
+        <div style="display:flex; justify-content:space-between; margin-top:10px; padding:10px; background:#f8f8f8; border-radius:8px; font-weight:bold;">
+            <span>总商品数: <span id="totalProductTypes">0</span></span>
+            <span>总库存量: <span id="totalAllStock">0</span> 瓶</span>
+            <span>低库存商品: <span id="lowStockCount" style="color:#c62828;">0</span></span>
+        </div>
+    </div>
     <!-- 档案与分类 -->
     <div class="card admin-only no-print">
         <h3>🛠️ 档案与分类 / Maestro y Categorías</h3>
@@ -224,8 +262,8 @@
             <select id="mMainCat" style="padding:8px;">
                 <option value="饮品" selected>饮品/Bebidas</option>
                 <option value="酒类">酒类/cerveza</option>
-                <option value="食材">食材/Alimentos</option>
-                <option value="调料">调料/Condimentos</option>
+                <option value="拉面">拉面/Ramen</option>
+                <option value="酱油">酱油/Soya</option>
                 <option value="其他">其他/Otros</option>
             </select>
             
@@ -484,12 +522,13 @@
 
     // ==================== 保存数据（本地+云端）====================
     function save() {
-        localStorage.setItem('cn_m21', JSON.stringify(master));
-        localStorage.setItem('cn_s21', JSON.stringify(stocks));
-        localStorage.setItem('cn_l21', JSON.stringify(logs));
-        saveToCloud();
-        render();
-    }
+    localStorage.setItem('cn_m21', JSON.stringify(master));
+    localStorage.setItem('cn_s21', JSON.stringify(stocks));
+    localStorage.setItem('cn_l21', JSON.stringify(logs));
+    saveToCloud();
+    render();
+    renderStockSummary();  // 👈 在这里添加这一行
+}
 
     // ==================== 权限登录 ====================
     function handleAuth() {
@@ -1156,6 +1195,88 @@
         
         renderMasterList();
     }
+        }  // render函数的结束
+
+    // ==================== 库存总览功能 ====================
+    function renderStockSummary() {
+        // 获取所有商品（按条码/名称去重）
+        let productMap = new Map();
+        
+        stocks.forEach(item => {
+            const key = item.barcode || item.name;
+            if (!productMap.has(key)) {
+                productMap.set(key, {
+                    name: item.name,
+                    spec: item.spec || '',
+                    cat: item.cat || '其他',
+                    barcode: item.barcode || '',
+                    warehouse: 0,
+                    fridge1: 0,
+                    fridge2: 0,
+                    fridge3: 0,
+                    total: 0
+                });
+            }
+            
+            let product = productMap.get(key);
+            if (item.location === '总仓库') {
+                product.warehouse += item.qty;
+            } else if (item.location === '1号冰箱') {
+                product.fridge1 += item.qty;
+            } else if (item.location === '2号冰箱') {
+                product.fridge2 += item.qty;
+            } else if (item.location === '3号冰箱') {
+                product.fridge3 += item.qty;
+            }
+            product.total = product.warehouse + product.fridge1 + product.fridge2 + product.fridge3;
+        });
+        
+        let products = Array.from(productMap.values());
+        let totalItems = products.length;
+        let totalStock = products.reduce((sum, p) => sum + p.total, 0);
+        let lowStockCount = products.filter(p => p.total < 10).length;
+        
+        document.getElementById('totalStockItems').innerText = totalItems;
+        document.getElementById('totalProductTypes').innerText = totalItems;
+        document.getElementById('totalAllStock').innerText = totalStock;
+        document.getElementById('lowStockCount').innerText = lowStockCount;
+        
+        let html = '';
+        products.sort((a,b) => b.total - a.total);
+        
+        products.forEach(p => {
+            let lowStockClass = p.total < 10 ? 'style="background:#ffebee;"' : '';
+            let suggestQty = p.total < 10 ? 20 - p.total : 0;
+            
+            html += `<tr ${lowStockClass}>
+                <td><strong>${p.name}</strong></td>
+                <td>${p.spec}</td>
+                <td><span style="background:#f0f0f0; padding:2px 6px; border-radius:4px;">${p.cat}</span></td>
+                <td>${p.warehouse}</td>
+                <td>${p.fridge1}</td>
+                <td>${p.fridge2}</td>
+                <td>${p.fridge3}</td>
+                <td><strong style="color:${p.total < 10 ? '#c62828' : '#2e7d32'};">${p.total}</strong></td>
+                <td>${p.total < 10 ? '⚠️ 建议进 ' + suggestQty : '充足'}</td>
+            </tr>`;
+        });
+        
+        document.getElementById('stockSummaryBody').innerHTML = html;
+    }
+
+    function filterStockSummary() {
+        let searchText = document.getElementById('stockSearchInput').value.toLowerCase();
+        let rows = document.querySelectorAll('#stockSummaryBody tr');
+        
+        rows.forEach(row => {
+            let text = row.innerText.toLowerCase();
+            if (text.includes(searchText)) {
+                row.style.display = '';
+            } else {
+                row.style.display = 'none';
+            }
+        });
+    }
 
     function deleteStockItem(id) {
         if (!isAdmin) {
@@ -1170,18 +1291,20 @@
 
     // ==================== 初始化 ====================
     window.onload = () => {
-        loadLocalData();
-        render();
-        initFirebase();
-        
-        autoSyncInterval = setInterval(() => {
-            if (firebaseLoaded && !syncInProgress) {
-                saveToCloud();
-            }
-        }, 5 * 60 * 1000);
-    };
+    loadLocalData();
+    render();
+    renderStockSummary();  // 👈 在这里添加这一行
+    initFirebase();
+    
+    autoSyncInterval = setInterval(() => {
+        if (firebaseLoaded && !syncInProgress) {
+            saveToCloud();
+        }
+    }, 5 * 60 * 1000);
+};
 </script>
 </body>
 </html>
+
 
 
