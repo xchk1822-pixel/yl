@@ -118,7 +118,7 @@
 
     <!-- 销售汇总弹窗 -->
 <div id="salesSummaryModal" style="display:none; position:fixed; top:0; left:0; width:100%; height:100%; background:rgba(0,0,0,0.5); z-index:2000; overflow-y:auto;">
-    <div style="background:white; margin:30px auto; max-width:800px; border-radius:10px; padding:20px;">
+    <div style="background:white; margin:30px auto; max-width:900px; border-radius:10px; padding:20px;">
         <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:20px;">
             <h2 style="color:var(--main-red); margin:0;">📊 销售汇总报表</h2>
             <button onclick="document.getElementById('salesSummaryModal').style.display='none'" style="background:none; border:none; font-size:24px; cursor:pointer;">✖</button>
@@ -138,19 +138,58 @@
             <button class="btn btn-blue" onclick="exportSalesToExcel()" style="padding:8px 20px;">导出Excel</button>
         </div>
         
-        <!-- 统计卡片 -->
-        <div style="display:grid; grid-template-columns:repeat(3,1fr); gap:15px; margin-bottom:20px;">
-            <div style="background:linear-gradient(135deg,#667eea,#764ba2); color:white; padding:15px; border-radius:8px;">
-                <div style="font-size:14px; opacity:0.9;">总销售额</div>
-                <div style="font-size:28px; font-weight:bold;" id="summaryTotalAmount">C$ 0</div>
+        <!-- 总览卡片 - 按分类 -->
+        <div style="margin-bottom:20px;">
+            <h3 style="margin-bottom:10px;">📊 销售总览</h3>
+            <div style="display:grid; grid-template-columns:repeat(3,1fr); gap:15px; margin-bottom:10px;">
+                <div style="background:linear-gradient(135deg,#667eea,#764ba2); color:white; padding:15px; border-radius:8px;">
+                    <div style="font-size:14px; opacity:0.9;">总销售额</div>
+                    <div style="font-size:28px; font-weight:bold;" id="summaryTotalAmount">C$ 0</div>
+                </div>
+                <div style="background:linear-gradient(135deg,#f093fb,#f5576c); color:white; padding:15px; border-radius:8px;">
+                    <div style="font-size:14px; opacity:0.9;">总销量(瓶)</div>
+                    <div style="font-size:28px; font-weight:bold;" id="summaryTotalQty">0</div>
+                </div>
+                <div style="background:linear-gradient(135deg,#4facfe,#00f2fe); color:white; padding:15px; border-radius:8px;">
+                    <div style="font-size:14px; opacity:0.9;">总利润</div>
+                    <div style="font-size:28px; font-weight:bold;" id="summaryTotalProfit">C$ 0</div>
+                </div>
             </div>
-            <div style="background:linear-gradient(135deg,#f093fb,#f5576c); color:white; padding:15px; border-radius:8px;">
-                <div style="font-size:14px; opacity:0.9;">总销量(瓶)</div>
-                <div style="font-size:28px; font-weight:bold;" id="summaryTotalQty">0</div>
-            </div>
-            <div style="background:linear-gradient(135deg,#4facfe,#00f2fe); color:white; padding:15px; border-radius:8px;">
-                <div style="font-size:14px; opacity:0.9;">总利润</div>
-                <div style="font-size:28px; font-weight:bold;" id="summaryTotalProfit">C$ 0</div>
+            
+            <!-- 分类统计卡片 -->
+            <div style="display:grid; grid-template-columns:repeat(4,1fr); gap:10px; margin-top:10px;">
+                <div style="background:#fff3e0; padding:10px; border-radius:8px; border-left:4px solid #ff9800;">
+                    <div style="font-size:12px; color:#666;">饮品</div>
+                    <div style="font-size:16px; font-weight:bold;" id="categoryDrinkAmount">C$ 0</div>
+                    <div style="font-size:12px; display:flex; justify-content:space-between;">
+                        <span id="categoryDrinkQty">0瓶</span>
+                        <span id="categoryDrinkProfit">C$ 0</span>
+                    </div>
+                </div>
+                <div style="background:#fde7e7; padding:10px; border-radius:8px; border-left:4px solid #c62828;">
+                    <div style="font-size:12px; color:#666;">酒类</div>
+                    <div style="font-size:16px; font-weight:bold;" id="categoryAlcoholAmount">C$ 0</div>
+                    <div style="font-size:12px; display:flex; justify-content:space-between;">
+                        <span id="categoryAlcoholQty">0瓶</span>
+                        <span id="categoryAlcoholProfit">C$ 0</span>
+                    </div>
+                </div>
+                <div style="background:#e8f5e9; padding:10px; border-radius:8px; border-left:4px solid #2e7d32;">
+                    <div style="font-size:12px; color:#666;">食材</div>
+                    <div style="font-size:16px; font-weight:bold;" id="categoryFoodAmount">C$ 0</div>
+                    <div style="font-size:12px; display:flex; justify-content:space-between;">
+                        <span id="categoryFoodQty">0份</span>
+                        <span id="categoryFoodProfit">C$ 0</span>
+                    </div>
+                </div>
+                <div style="background:#e3f2fd; padding:10px; border-radius:8px; border-left:4px solid #1565c0;">
+                    <div style="font-size:12px; color:#666;">其他</div>
+                    <div style="font-size:16px; font-weight:bold;" id="categoryOtherAmount">C$ 0</div>
+                    <div style="font-size:12px; display:flex; justify-content:space-between;">
+                        <span id="categoryOtherQty">0</span>
+                        <span id="categoryOtherProfit">C$ 0</span>
+                    </div>
+                </div>
             </div>
         </div>
         
@@ -162,6 +201,7 @@
                     <thead style="background:#f8f8f8; position:sticky; top:0;">
                         <tr>
                             <th>排名</th>
+                            <th>分类</th>
                             <th>商品名称</th>
                             <th>规格</th>
                             <th>销量</th>
@@ -853,7 +893,17 @@
     let totalAmount = 0;
     let totalQty = 0;
     let totalProfit = 0;
-    let productMap = {}; // 用于商品排行
+    
+    // 分类统计
+    let categories = {
+        '饮品': { amount: 0, qty: 0, profit: 0 },
+        '酒类': { amount: 0, qty: 0, profit: 0 },
+        '食材': { amount: 0, qty: 0, profit: 0 },
+        '其他': { amount: 0, qty: 0, profit: 0 }
+    };
+    
+    // 商品排行
+    let productMap = {};
     
     filteredSales.forEach(log => {
         const amount = log.amt || 0;
@@ -863,10 +913,28 @@
         // 累加总数
         totalAmount += amount;
         totalQty += qty;
-        totalProfit += amount * 0.3; // 利润按30%估算
+        totalProfit += amount * 0.3;
         
         // 解析商品名称
         const productName = note.split('@')[0].replace('销售/Venta:', '').trim();
+        
+        // 查找商品分类
+        let category = '其他';
+        const product = master.find(m => m.name === productName);
+        if (product && product.cat) {
+            category = product.cat;
+        }
+        
+        // 按分类统计
+        if (categories[category]) {
+            categories[category].amount += amount;
+            categories[category].qty += qty;
+            categories[category].profit += amount * 0.3;
+        } else {
+            categories['其他'].amount += amount;
+            categories['其他'].qty += qty;
+            categories['其他'].profit += amount * 0.3;
+        }
         
         // 商品排行统计
         if (productName) {
@@ -875,15 +943,14 @@
                     qty: 0,
                     amount: 0,
                     spec: '',
-                    profit: 0
+                    profit: 0,
+                    category: category
                 };
             }
             productMap[productName].qty += qty;
             productMap[productName].amount += amount;
             productMap[productName].profit += amount * 0.3;
             
-            // 查找商品规格
-            const product = master.find(m => m.name === productName);
             if (product) {
                 productMap[productName].spec = product.spec || '';
             }
@@ -895,15 +962,40 @@
     document.getElementById('summaryTotalQty').innerText = totalQty;
     document.getElementById('summaryTotalProfit').innerText = `C$ ${totalProfit.toFixed(2)}`;
     
+    // 更新分类统计
+    document.getElementById('categoryDrinkAmount').innerText = `C$ ${categories.饮品.amount.toFixed(2)}`;
+    document.getElementById('categoryDrinkQty').innerText = `${categories.饮品.qty}瓶`;
+    document.getElementById('categoryDrinkProfit').innerText = `C$ ${categories.饮品.profit.toFixed(2)}`;
+    
+    document.getElementById('categoryAlcoholAmount').innerText = `C$ ${categories.酒类.amount.toFixed(2)}`;
+    document.getElementById('categoryAlcoholQty').innerText = `${categories.酒类.qty}瓶`;
+    document.getElementById('categoryAlcoholProfit').innerText = `C$ ${categories.酒类.profit.toFixed(2)}`;
+    
+    document.getElementById('categoryFoodAmount').innerText = `C$ ${categories.食材.amount.toFixed(2)}`;
+    document.getElementById('categoryFoodQty').innerText = `${categories.食材.qty}份`;
+    document.getElementById('categoryFoodProfit').innerText = `C$ ${categories.食材.profit.toFixed(2)}`;
+    
+    document.getElementById('categoryOtherAmount').innerText = `C$ ${categories.其他.amount.toFixed(2)}`;
+    document.getElementById('categoryOtherQty').innerText = categories.其他.qty;
+    document.getElementById('categoryOtherProfit').innerText = `C$ ${categories.其他.profit.toFixed(2)}`;
+    
     // 商品销售排行（按销量从高到低）
     const productSorted = Object.entries(productMap)
         .sort((a,b) => b[1].qty - a[1].qty);
     
     if (productSorted.length > 0) {
         document.getElementById('productSalesBody').innerHTML = productSorted.map(([name, data], index) => {
+            // 分类颜色标记
+            let categoryColor = '';
+            if (data.category === '饮品') categoryColor = '#ff9800';
+            else if (data.category === '酒类') categoryColor = '#c62828';
+            else if (data.category === '食材') categoryColor = '#2e7d32';
+            else categoryColor = '#1565c0';
+            
             return `
                 <tr>
                     <td><strong>${index + 1}</strong></td>
+                    <td><span style="background:${categoryColor}; color:white; padding:2px 8px; border-radius:12px; font-size:11px;">${data.category}</span></td>
                     <td>${name}</td>
                     <td>${data.spec || '—'}</td>
                     <td>${data.qty}</td>
@@ -915,7 +1007,7 @@
     } else {
         document.getElementById('productSalesBody').innerHTML = `
             <tr>
-                <td colspan="6" style="text-align:center; padding:20px; color:#999;">暂无销售数据</td>
+                <td colspan="7" style="text-align:center; padding:20px; color:#999;">暂无销售数据</td>
             </tr>
         `;
     }
@@ -1091,4 +1183,5 @@
 </script>
 </body>
 </html>
+
 
