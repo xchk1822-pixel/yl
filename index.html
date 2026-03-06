@@ -117,118 +117,64 @@
     </div>
 
     <!-- 销售汇总弹窗 -->
-    <div id="salesSummaryModal" style="display:none; position:fixed; top:0; left:0; width:100%; height:100%; background:rgba(0,0,0,0.5); z-index:2000; overflow-y:auto;">
-        <div style="background:white; margin:30px auto; max-width:1000px; border-radius:10px; padding:20px;">
-            <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:20px;">
-                <h2 style="color:var(--main-red); margin:0;">📊 销售汇总报表</h2>
-                <button onclick="document.getElementById('salesSummaryModal').style.display='none'" style="background:none; border:none; font-size:24px; cursor:pointer;">✖</button>
+<div id="salesSummaryModal" style="display:none; position:fixed; top:0; left:0; width:100%; height:100%; background:rgba(0,0,0,0.5); z-index:2000; overflow-y:auto;">
+    <div style="background:white; margin:30px auto; max-width:800px; border-radius:10px; padding:20px;">
+        <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:20px;">
+            <h2 style="color:var(--main-red); margin:0;">📊 销售汇总报表</h2>
+            <button onclick="document.getElementById('salesSummaryModal').style.display='none'" style="background:none; border:none; font-size:24px; cursor:pointer;">✖</button>
+        </div>
+        
+        <!-- 日期筛选 -->
+        <div style="display:flex; gap:10px; margin-bottom:20px; padding:15px; background:#f5f5f5; border-radius:8px;">
+            <div style="flex:1">
+                <label style="display:block; font-size:12px; color:#666;">开始日期</label>
+                <input type="date" id="salesStartDate" value="" style="width:100%; padding:8px; border:1px solid #ddd; border-radius:4px;">
             </div>
-            
-            <!-- 日期筛选 -->
-            <div style="display:grid; grid-template-columns:repeat(auto-fit, minmax(150px,1fr)); gap:10px; margin-bottom:20px; padding:15px; background:#f5f5f5; border-radius:8px;">
-                <label>开始日期:
-                    <input type="date" id="salesStartDate" value="" style="width:100%; padding:8px;">
-                </label>
-                <label>结束日期:
-                    <input type="date" id="salesEndDate" value="" style="width:100%; padding:8px;">
-                </label>
-                <label>冰箱:
-                    <select id="salesFridgeFilter" style="width:100%; padding:8px;">
-                        <option value="all">全部冰箱</option>
-                        <option value="总仓库">总仓库</option>
-                        <option value="1号冰箱">1号冰箱</option>
-                        <option value="2号冰箱">2号冰箱</option>
-                        <option value="3号冰箱">3号冰箱</option>
-                    </select>
-                </label>
-                <button class="btn btn-red" onclick="loadSalesSummary()" style="align-self:flex-end;">查询</button>
+            <div style="flex:1">
+                <label style="display:block; font-size:12px; color:#666;">结束日期</label>
+                <input type="date" id="salesEndDate" value="" style="width:100%; padding:8px; border:1px solid #ddd; border-radius:4px;">
             </div>
-            
-            <!-- 统计卡片 -->
-            <div style="display:grid; grid-template-columns:repeat(3,1fr); gap:15px; margin-bottom:20px;">
-                <div style="background:linear-gradient(135deg,#667eea,#764ba2); color:white; padding:15px; border-radius:8px;">
-                    <div style="font-size:14px; opacity:0.9;">总销售额</div>
-                    <div style="font-size:28px; font-weight:bold;" id="summaryTotalAmount">C$ 0</div>
-                </div>
-                <div style="background:linear-gradient(135deg,#f093fb,#f5576c); color:white; padding:15px; border-radius:8px;">
-                    <div style="font-size:14px; opacity:0.9;">总销量(瓶)</div>
-                    <div style="font-size:28px; font-weight:bold;" id="summaryTotalQty">0</div>
-                </div>
-                <div style="background:linear-gradient(135deg,#4facfe,#00f2fe); color:white; padding:15px; border-radius:8px;">
-                    <div style="font-size:14px; opacity:0.9;">总利润</div>
-                    <div style="font-size:28px; font-weight:bold;" id="summaryTotalProfit">C$ 0</div>
-                </div>
+            <button class="btn btn-red" onclick="loadSalesSummary()" style="padding:8px 20px;">查询</button>
+            <button class="btn btn-blue" onclick="exportSalesToExcel()" style="padding:8px 20px;">导出Excel</button>
+        </div>
+        
+        <!-- 统计卡片 -->
+        <div style="display:grid; grid-template-columns:repeat(3,1fr); gap:15px; margin-bottom:20px;">
+            <div style="background:linear-gradient(135deg,#667eea,#764ba2); color:white; padding:15px; border-radius:8px;">
+                <div style="font-size:14px; opacity:0.9;">总销售额</div>
+                <div style="font-size:28px; font-weight:bold;" id="summaryTotalAmount">C$ 0</div>
             </div>
-            
-            <!-- 每日销售趋势 -->
-            <div style="margin-bottom:20px;">
-                <h3 style="margin-bottom:10px;">📈 每日销售趋势</h3>
-                <div style="max-height:200px; overflow-y:auto; border:1px solid #ddd; border-radius:8px;">
-                    <table style="width:100%;">
-                        <thead style="background:#f8f8f8; position:sticky; top:0;">
-                            <tr>
-                                <th>日期</th>
-                                <th>销量(瓶)</th>
-                                <th>销售额</th>
-                                <th>占比</th>
-                            </tr>
-                        </thead>
-                        <tbody id="dailySalesBody"></tbody>
-                    </table>
-                </div>
+            <div style="background:linear-gradient(135deg,#f093fb,#f5576c); color:white; padding:15px; border-radius:8px;">
+                <div style="font-size:14px; opacity:0.9;">总销量(瓶)</div>
+                <div style="font-size:28px; font-weight:bold;" id="summaryTotalQty">0</div>
             </div>
-            
-            <!-- 商品销售排行 -->
-            <div style="margin-bottom:20px;">
-                <h3 style="margin-bottom:10px;">🍺 商品销售排行</h3>
-                <div style="max-height:300px; overflow-y:auto; border:1px solid #ddd; border-radius:8px;">
-                    <table style="width:100%;">
-                        <thead style="background:#f8f8f8; position:sticky; top:0;">
-                            <tr>
-                                <th>排名</th>
-                                <th>商品名称</th>
-                                <th>规格</th>
-                                <th>销量</th>
-                                <th>销售额</th>
-                                <th>利润</th>
-                            </tr>
-                        </thead>
-                        <tbody id="productSalesBody"></tbody>
-                    </table>
-                </div>
+            <div style="background:linear-gradient(135deg,#4facfe,#00f2fe); color:white; padding:15px; border-radius:8px;">
+                <div style="font-size:14px; opacity:0.9;">总利润</div>
+                <div style="font-size:28px; font-weight:bold;" id="summaryTotalProfit">C$ 0</div>
             </div>
-            
-            <!-- 各冰箱销售情况 -->
-            <div style="margin-bottom:20px;">
-                <h3 style="margin-bottom:10px;">🧊 各冰箱销售情况</h3>
-                <div style="display:grid; grid-template-columns:repeat(2,1fr); gap:10px;" id="fridgeSalesBody"></div>
-            </div>
-            
-            <!-- 销售明细 -->
-            <div style="margin-bottom:20px;">
-                <h3 style="margin-bottom:10px;">📋 销售明细 / Detalle de Ventas</h3>
-                <div style="max-height:300px; overflow-y:auto; border:1px solid #ddd; border-radius:8px;">
-                    <table style="width:100%;">
-                        <thead style="background:#f8f8f8; position:sticky; top:0;">
-                            <tr>
-                                <th>时间</th>
-                                <th>冰箱</th>
-                                <th>商品名称</th>
-                                <th>规格</th>
-                                <th>数量</th>
-                                <th>销售额</th>
-                            </tr>
-                        </thead>
-                        <tbody id="dailySalesDetailBody"></tbody>
-                    </table>
-                </div>
-            </div>
-            
-            <div style="text-align:right;">
-                <button class="btn btn-blue" onclick="exportSalesToExcel()">📥 导出Excel</button>
+        </div>
+        
+        <!-- 商品销售排行 -->
+        <div style="margin-bottom:20px;">
+            <h3 style="margin-bottom:10px;">🏆 商品销售排行</h3>
+            <div style="max-height:400px; overflow-y:auto; border:1px solid #ddd; border-radius:8px;">
+                <table style="width:100%;">
+                    <thead style="background:#f8f8f8; position:sticky; top:0;">
+                        <tr>
+                            <th>排名</th>
+                            <th>商品名称</th>
+                            <th>规格</th>
+                            <th>销量</th>
+                            <th>销售额</th>
+                            <th>利润</th>
+                        </tr>
+                    </thead>
+                    <tbody id="productSalesBody"></tbody>
+                </table>
             </div>
         </div>
     </div>
+</div>
 
     <!-- 档案与分类 -->
     <div class="card admin-only no-print">
@@ -871,150 +817,93 @@
     }
 
     function loadSalesSummary() {
-        // 设置默认日期（当月1日到今天）
-        const today = new Date();
-        const year = today.getFullYear();
-        const month = String(today.getMonth() + 1).padStart(2, '0');
-        const day = String(today.getDate()).padStart(2, '0');
-        const firstDayStr = `${year}-${month}-01`;
-        const todayStr = `${year}-${month}-${day}`;
+    // 设置默认日期（当月1日到今天）
+    const today = new Date();
+    const year = today.getFullYear();
+    const month = String(today.getMonth() + 1).padStart(2, '0');
+    const day = String(today.getDate()).padStart(2, '0');
+    const firstDayStr = `${year}-${month}-01`;
+    const todayStr = `${year}-${month}-${day}`;
+    
+    // 如果日期输入框是空的，设置默认值
+    if (!document.getElementById('salesStartDate').value) {
+        document.getElementById('salesStartDate').value = firstDayStr;
+    }
+    if (!document.getElementById('salesEndDate').value) {
+        document.getElementById('salesEndDate').value = todayStr;
+    }
+    
+    const startDate = document.getElementById('salesStartDate').value;
+    const endDate = document.getElementById('salesEndDate').value;
+    
+    // 获取所有销售记录
+    const salesLogs = logs.filter(log => 
+        log.type && 
+        log.type.includes('销售') && 
+        log.t
+    );
+    
+    // 按日期范围过滤
+    let filteredSales = salesLogs.filter(log => {
+        const logDate = log.t.split('T')[0];
+        return logDate >= startDate && logDate <= endDate;
+    });
+    
+    // 统计数据
+    let totalAmount = 0;
+    let totalQty = 0;
+    let totalProfit = 0;
+    let productMap = {}; // 用于商品排行
+    
+    filteredSales.forEach(log => {
+        const amount = log.amt || 0;
+        const qty = log.q || 0;
+        const note = log.note || '';
         
-        // 如果日期输入框是空的，设置默认值
-        if (!document.getElementById('salesStartDate').value) {
-            document.getElementById('salesStartDate').value = firstDayStr;
+        // 累加总数
+        totalAmount += amount;
+        totalQty += qty;
+        totalProfit += amount * 0.3; // 利润按30%估算
+        
+        // 解析商品名称
+        const productName = note.split('@')[0].replace('销售/Venta:', '').trim();
+        
+        // 商品排行统计
+        if (productName) {
+            if (!productMap[productName]) {
+                productMap[productName] = {
+                    qty: 0,
+                    amount: 0,
+                    spec: '',
+                    profit: 0
+                };
+            }
+            productMap[productName].qty += qty;
+            productMap[productName].amount += amount;
+            productMap[productName].profit += amount * 0.3;
+            
+            // 查找商品规格
+            const product = master.find(m => m.name === productName);
+            if (product) {
+                productMap[productName].spec = product.spec || '';
+            }
         }
-        if (!document.getElementById('salesEndDate').value) {
-            document.getElementById('salesEndDate').value = todayStr;
-        }
-        
-        const startDate = document.getElementById('salesStartDate').value;
-        const endDate = document.getElementById('salesEndDate').value;
-        const fridgeFilter = document.getElementById('salesFridgeFilter').value;
-        
-        const salesLogs = logs.filter(log => 
-            log.type && 
-            log.type.includes('销售') && 
-            log.t
-        );
-        
-        let filteredSales = salesLogs.filter(log => {
-            const logDate = log.t.split('T')[0];
-            return logDate >= startDate && logDate <= endDate;
-        });
-        
-        if (fridgeFilter !== 'all') {
-            filteredSales = filteredSales.filter(log => 
-                log.note && log.note.includes(fridgeFilter)
-            );
-        }
-        
-        const summary = {
-            totalAmount: 0,
-            totalQty: 0,
-            totalProfit: 0,
-            byDate: {},
-            byProduct: {},
-            byFridge: {
-                '总仓库': { amount: 0, qty: 0 },
-                '1号冰箱': { amount: 0, qty: 0 },
-                '2号冰箱': { amount: 0, qty: 0 },
-                '3号冰箱': { amount: 0, qty: 0 }
-            }
-        };
-        
-        // 存储销售明细
-        let salesDetails = [];
-        
-        filteredSales.forEach(log => {
-            const amount = log.amt || 0;
-            const qty = log.q || 0;
-            const date = log.t.split('T')[0];
-            const time = log.t.slice(11, 16);
-            const note = log.note || '';
-            
-            summary.totalAmount += amount;
-            summary.totalQty += qty;
-            summary.totalProfit += amount * 0.3;
-            
-            if (!summary.byDate[date]) {
-                summary.byDate[date] = { amount: 0, qty: 0 };
-            }
-            summary.byDate[date].amount += amount;
-            summary.byDate[date].qty += qty;
-            
-            const productName = note.split('@')[0].replace('销售/Venta:', '').trim();
-            let fridge = '未知';
-            for (let f in summary.byFridge) {
-                if (note.includes(f)) {
-                    fridge = f;
-                    break;
-                }
-            }
-            
-            salesDetails.push({
-                time: time,
-                date: date,
-                fridge: fridge,
-                productName: productName,
-                spec: '',
-                qty: qty,
-                amount: amount
-            });
-            
-            if (productName) {
-                if (!summary.byProduct[productName]) {
-                    summary.byProduct[productName] = {
-                        qty: 0,
-                        amount: 0,
-                        spec: '',
-                        profit: 0
-                    };
-                }
-                summary.byProduct[productName].qty += qty;
-                summary.byProduct[productName].amount += amount;
-                summary.byProduct[productName].profit += amount * 0.3;
-                
-                const product = master.find(m => m.name === productName);
-                if (product) {
-                    summary.byProduct[productName].spec = product.spec || '';
-                    salesDetails[salesDetails.length-1].spec = product.spec || '';
-                }
-            }
-            
-            for (let fridge in summary.byFridge) {
-                if (note.includes(fridge)) {
-                    summary.byFridge[fridge].amount += amount;
-                    summary.byFridge[fridge].qty += qty;
-                    break;
-                }
-            }
-        });
-        
-        document.getElementById('summaryTotalAmount').innerText = `C$ ${summary.totalAmount.toFixed(2)}`;
-        document.getElementById('summaryTotalQty').innerText = summary.totalQty;
-        document.getElementById('summaryTotalProfit').innerText = `C$ ${summary.totalProfit.toFixed(2)}`;
-        
-        const dailySorted = Object.entries(summary.byDate).sort((a,b) => b[0].localeCompare(a[0]));
-        document.getElementById('dailySalesBody').innerHTML = dailySorted.map(([date, data]) => {
-            const percent = summary.totalAmount > 0 ? (data.amount / summary.totalAmount * 100).toFixed(1) : 0;
-            return `
-                <tr>
-                    <td>${date}</td>
-                    <td>${data.qty}</td>
-                    <td>C$ ${data.amount.toFixed(2)}</td>
-                    <td>${percent}%</td>
-                </tr>
-            `;
-        }).join('');
-        
-        const productSorted = Object.entries(summary.byProduct)
-            .sort((a,b) => b[1].qty - a[1].qty)
-            .slice(0, 20);
-        
+    });
+    
+    // 更新总览卡片
+    document.getElementById('summaryTotalAmount').innerText = `C$ ${totalAmount.toFixed(2)}`;
+    document.getElementById('summaryTotalQty').innerText = totalQty;
+    document.getElementById('summaryTotalProfit').innerText = `C$ ${totalProfit.toFixed(2)}`;
+    
+    // 商品销售排行（按销量从高到低）
+    const productSorted = Object.entries(productMap)
+        .sort((a,b) => b[1].qty - a[1].qty);
+    
+    if (productSorted.length > 0) {
         document.getElementById('productSalesBody').innerHTML = productSorted.map(([name, data], index) => {
             return `
                 <tr>
-                    <td>${index + 1}</td>
+                    <td><strong>${index + 1}</strong></td>
                     <td>${name}</td>
                     <td>${data.spec || '—'}</td>
                     <td>${data.qty}</td>
@@ -1023,37 +912,14 @@
                 </tr>
             `;
         }).join('');
-        
-        document.getElementById('fridgeSalesBody').innerHTML = Object.entries(summary.byFridge)
-            .map(([fridge, data]) => {
-                if (data.qty === 0) return '';
-                return `
-                    <div style="background:#f5f5f5; padding:10px; border-radius:8px; margin-bottom:5px;">
-                        <div style="font-weight:bold;">${fridge}</div>
-                        <div style="display:flex; justify-content:space-between; margin-top:5px;">
-                            <span>销量: ${data.qty}瓶</span>
-                            <span style="color:var(--main-red);">C$ ${data.amount.toFixed(2)}</span>
-                        </div>
-                    </div>
-                `;
-            }).filter(html => html).join('');
-        
-        // 渲染销售明细（按时间倒序）
-        const detailsSorted = salesDetails.sort((a,b) => b.date.localeCompare(a.date) || b.time.localeCompare(a.time));
-        document.getElementById('dailySalesDetailBody').innerHTML = detailsSorted.map(detail => {
-            return `
-                <tr>
-                    <td>${detail.date} ${detail.time}</td>
-                    <td>${detail.fridge}</td>
-                    <td>${detail.productName}</td>
-                    <td>${detail.spec || '—'}</td>
-                    <td>${detail.qty}</td>
-                    <td>C$ ${detail.amount.toFixed(2)}</td>
-                </tr>
-            `;
-        }).join('');
+    } else {
+        document.getElementById('productSalesBody').innerHTML = `
+            <tr>
+                <td colspan="6" style="text-align:center; padding:20px; color:#999;">暂无销售数据</td>
+            </tr>
+        `;
     }
-
+}
     function exportSalesToExcel() {
         const startDate = document.getElementById('salesStartDate').value;
         const endDate = document.getElementById('salesEndDate').value;
@@ -1225,3 +1091,4 @@
 </script>
 </body>
 </html>
+
