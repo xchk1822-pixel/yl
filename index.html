@@ -1015,9 +1015,10 @@
 
     // ==================== 销售汇总功能 ====================
     function showSalesSummary() {
-        document.getElementById('salesSummaryModal').style.display = 'block';
-        loadSalesSummary();
-    }
+    // 移除权限检查，所有人都能看
+    document.getElementById('salesSummaryModal').style.display = 'block';
+    loadSalesSummary();
+}
 
     function loadSalesSummary() {
         // 设置默认日期（当月1日到今天）
@@ -1449,5 +1450,6 @@
 </script>
 </body>
 </html>
+
 
 
