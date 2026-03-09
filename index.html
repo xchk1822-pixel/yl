@@ -819,7 +819,7 @@
             }
             total += item.sub;
         });
-        logs.push({id:Date.now(), t:new Date().toISOString(), type:'进货/Compra', note:`批量入库/Entrada`, q:tempBillItems.length, amt:total});
+        logs.push({id:Date.now(), t:new Date().toLocaleString('sv').replace(' ', 'T'), type:'进货/Compra', note:`批量入库/Entrada`, q:tempBillItems.length, amt:total});
         tempBillItems=[]; renderTempBill(); save();
     }
 
@@ -897,7 +897,7 @@
 
         logs.push({
             id: Date.now(),
-            t: new Date().toISOString(),
+            t: new Date().toLocaleString('sv').replace(' ', 'T'),
             type: '调拨/Traslado',
             note: `从总仓库到 ${target}: ${s.name} ${s.spec}`,
             q: qty,
@@ -918,7 +918,7 @@
             // 只有正差额才记录为销售
             logs.push({
                 id: Date.now(), 
-                t: new Date().toISOString(), 
+                t: new Date().toLocaleString('sv').replace(' ', 'T'),
                 type: '销售/Venta', 
                 note: `${s.name} @ ${s.location}`, 
                 q: gap, 
@@ -1449,4 +1449,5 @@
 </script>
 </body>
 </html>
+
 
