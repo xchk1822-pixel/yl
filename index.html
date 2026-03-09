@@ -59,6 +59,16 @@
             margin-left: 5px;
         }
 
+        /* 选中行样式 */
+        #stockBody tr.selected {
+            background-color: #e3f2fd;
+            border-left: 3px solid var(--blue);
+        }
+        #stockBody tr:hover {
+            background-color: #f5f5f5;
+            cursor: pointer;
+        }
+
         @media print {
             .no-print, header, .nav-bar, .fridge-grid, #transferBox, .input-area, .admin-only, .dash-board, .cat-bar, .filter-bar, #cloud-status { display: none !important; }
             .print-full-report { display: block !important; }
@@ -117,104 +127,105 @@
     </div>
 
     <!-- 销售汇总弹窗 -->
-<div id="salesSummaryModal" style="display:none; position:fixed; top:0; left:0; width:100%; height:100%; background:rgba(0,0,0,0.5); z-index:2000; overflow-y:auto;">
-    <div style="background:white; margin:30px auto; max-width:900px; border-radius:10px; padding:20px;">
-        <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:20px;">
-            <h2 style="color:var(--main-red); margin:0;">📊 销售汇总报表</h2>
-            <button onclick="document.getElementById('salesSummaryModal').style.display='none'" style="background:none; border:none; font-size:24px; cursor:pointer;">✖</button>
-        </div>
-        
-        <!-- 日期筛选 -->
-        <div style="display:flex; gap:10px; margin-bottom:20px; padding:15px; background:#f5f5f5; border-radius:8px;">
-            <div style="flex:1">
-                <label style="display:block; font-size:12px; color:#666;">开始日期</label>
-                <input type="date" id="salesStartDate" value="" style="width:100%; padding:8px; border:1px solid #ddd; border-radius:4px;">
+    <div id="salesSummaryModal" style="display:none; position:fixed; top:0; left:0; width:100%; height:100%; background:rgba(0,0,0,0.5); z-index:2000; overflow-y:auto;">
+        <div style="background:white; margin:30px auto; max-width:900px; border-radius:10px; padding:20px;">
+            <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:20px;">
+                <h2 style="color:var(--main-red); margin:0;">📊 销售汇总报表</h2>
+                <button onclick="document.getElementById('salesSummaryModal').style.display='none'" style="background:none; border:none; font-size:24px; cursor:pointer;">✖</button>
             </div>
-            <div style="flex:1">
-                <label style="display:block; font-size:12px; color:#666;">结束日期</label>
-                <input type="date" id="salesEndDate" value="" style="width:100%; padding:8px; border:1px solid #ddd; border-radius:4px;">
+            
+            <!-- 日期筛选 -->
+            <div style="display:flex; gap:10px; margin-bottom:20px; padding:15px; background:#f5f5f5; border-radius:8px;">
+                <div style="flex:1">
+                    <label style="display:block; font-size:12px; color:#666;">开始日期</label>
+                    <input type="date" id="salesStartDate" value="" style="width:100%; padding:8px; border:1px solid #ddd; border-radius:4px;">
+                </div>
+                <div style="flex:1">
+                    <label style="display:block; font-size:12px; color:#666;">结束日期</label>
+                    <input type="date" id="salesEndDate" value="" style="width:100%; padding:8px; border:1px solid #ddd; border-radius:4px;">
+                </div>
+                <button class="btn btn-red" onclick="loadSalesSummary()" style="padding:8px 20px;">查询</button>
+                <button class="btn btn-blue" onclick="exportSalesToExcel()" style="padding:8px 20px;">导出Excel</button>
             </div>
-            <button class="btn btn-red" onclick="loadSalesSummary()" style="padding:8px 20px;">查询</button>
-            <button class="btn btn-blue" onclick="exportSalesToExcel()" style="padding:8px 20px;">导出Excel</button>
-        </div>
-        
-        <!-- 总览卡片 - 按分类 -->
-        <div style="margin-bottom:20px;">
-            <h3 style="margin-bottom:10px;">📊 销售总览</h3>
-            <div style="display:grid; grid-template-columns:repeat(3,1fr); gap:15px; margin-bottom:10px;">
-                <div style="background:linear-gradient(135deg,#667eea,#764ba2); color:white; padding:15px; border-radius:8px;">
-                    <div style="font-size:14px; opacity:0.9;">总销售额</div>
-                    <div style="font-size:28px; font-weight:bold;" id="summaryTotalAmount">C$ 0</div>
+            
+            <!-- 总览卡片 - 按分类 -->
+            <div style="margin-bottom:20px;">
+                <h3 style="margin-bottom:10px;">📊 销售总览</h3>
+                <div style="display:grid; grid-template-columns:repeat(3,1fr); gap:15px; margin-bottom:10px;">
+                    <div style="background:linear-gradient(135deg,#667eea,#764ba2); color:white; padding:15px; border-radius:8px;">
+                        <div style="font-size:14px; opacity:0.9;">总销售额</div>
+                        <div style="font-size:28px; font-weight:bold;" id="summaryTotalAmount">C$ 0</div>
+                    </div>
+                    <div style="background:linear-gradient(135deg,#f093fb,#f5576c); color:white; padding:15px; border-radius:8px;">
+                        <div style="font-size:14px; opacity:0.9;">总销量(瓶)</div>
+                        <div style="font-size:28px; font-weight:bold;" id="summaryTotalQty">0</div>
+                    </div>
+                    <div style="background:linear-gradient(135deg,#4facfe,#00f2fe); color:white; padding:15px; border-radius:8px;">
+                        <div style="font-size:14px; opacity:0.9;">总利润</div>
+                        <div style="font-size:28px; font-weight:bold;" id="summaryTotalProfit">C$ 0</div>
+                    </div>
                 </div>
-                <div style="background:linear-gradient(135deg,#f093fb,#f5576c); color:white; padding:15px; border-radius:8px;">
-                    <div style="font-size:14px; opacity:0.9;">总销量(瓶)</div>
-                    <div style="font-size:28px; font-weight:bold;" id="summaryTotalQty">0</div>
-                </div>
-                <div style="background:linear-gradient(135deg,#4facfe,#00f2fe); color:white; padding:15px; border-radius:8px;">
-                    <div style="font-size:14px; opacity:0.9;">总利润</div>
-                    <div style="font-size:28px; font-weight:bold;" id="summaryTotalProfit">C$ 0</div>
+                
+                <!-- 分类统计卡片 -->
+                <div style="display:grid; grid-template-columns:repeat(4,1fr); gap:10px; margin-top:10px;">
+                    <div style="background:#fff3e0; padding:10px; border-radius:8px; border-left:4px solid #ff9800;">
+                        <div style="font-size:12px; color:#666;">饮品</div>
+                        <div style="font-size:16px; font-weight:bold;" id="categoryDrinkAmount">C$ 0</div>
+                        <div style="font-size:12px; display:flex; justify-content:space-between;">
+                            <span id="categoryDrinkQty">0瓶</span>
+                            <span id="categoryDrinkProfit">C$ 0</span>
+                        </div>
+                    </div>
+                    <div style="background:#fde7e7; padding:10px; border-radius:8px; border-left:4px solid #c62828;">
+                        <div style="font-size:12px; color:#666;">酒类</div>
+                        <div style="font-size:16px; font-weight:bold;" id="categoryAlcoholAmount">C$ 0</div>
+                        <div style="font-size:12px; display:flex; justify-content:space-between;">
+                            <span id="categoryAlcoholQty">0瓶</span>
+                            <span id="categoryAlcoholProfit">C$ 0</span>
+                        </div>
+                    </div>
+                    <div style="background:#e8f5e9; padding:10px; border-radius:8px; border-left:4px solid #2e7d32;">
+                        <div style="font-size:12px; color:#666;">拉面</div>
+                        <div style="font-size:16px; font-weight:bold;" id="categoryFoodAmount">C$ 0</div>
+                        <div style="font-size:12px; display:flex; justify-content:space-between;">
+                            <span id="categoryFoodQty">0份</span>
+                            <span id="categoryFoodProfit">C$ 0</span>
+                        </div>
+                    </div>
+                    <div style="background:#e3f2fd; padding:10px; border-radius:8px; border-left:4px solid #1565c0;">
+                        <div style="font-size:12px; color:#666;">酱油</div>
+                        <div style="font-size:16px; font-weight:bold;" id="categoryOtherAmount">C$ 0</div>
+                        <div style="font-size:12px; display:flex; justify-content:space-between;">
+                            <span id="categoryOtherQty">0</span>
+                            <span id="categoryOtherProfit">C$ 0</span>
+                        </div>
+                    </div>
                 </div>
             </div>
             
-            <!-- 分类统计卡片 -->
-            <div style="display:grid; grid-template-columns:repeat(4,1fr); gap:10px; margin-top:10px;">
-                <div style="background:#fff3e0; padding:10px; border-radius:8px; border-left:4px solid #ff9800;">
-                    <div style="font-size:12px; color:#666;">饮品</div>
-                    <div style="font-size:16px; font-weight:bold;" id="categoryDrinkAmount">C$ 0</div>
-                    <div style="font-size:12px; display:flex; justify-content:space-between;">
-                        <span id="categoryDrinkQty">0瓶</span>
-                        <span id="categoryDrinkProfit">C$ 0</span>
-                    </div>
+            <!-- 商品销售排行 -->
+            <div style="margin-bottom:20px;">
+                <h3 style="margin-bottom:10px;">🏆 商品销售排行</h3>
+                <div style="max-height:400px; overflow-y:auto; border:1px solid #ddd; border-radius:8px;">
+                    <table style="width:100%;">
+                        <thead style="background:#f8f8f8; position:sticky; top:0;">
+                            <tr>
+                                <th>排名</th>
+                                <th>分类</th>
+                                <th>商品名称</th>
+                                <th>规格</th>
+                                <th>销量</th>
+                                <th>销售额</th>
+                                <th>利润</th>
+                            </tr>
+                        </thead>
+                        <tbody id="productSalesBody"></tbody>
+                    </table>
                 </div>
-                <div style="background:#fde7e7; padding:10px; border-radius:8px; border-left:4px solid #c62828;">
-                    <div style="font-size:12px; color:#666;">酒类</div>
-                    <div style="font-size:16px; font-weight:bold;" id="categoryAlcoholAmount">C$ 0</div>
-                    <div style="font-size:12px; display:flex; justify-content:space-between;">
-                        <span id="categoryAlcoholQty">0瓶</span>
-                        <span id="categoryAlcoholProfit">C$ 0</span>
-                    </div>
-                </div>
-                <div style="background:#e8f5e9; padding:10px; border-radius:8px; border-left:4px solid #2e7d32;">
-                    <div style="font-size:12px; color:#666;">拉面</div>
-                    <div style="font-size:16px; font-weight:bold;" id="categoryFoodAmount">C$ 0</div>
-                    <div style="font-size:12px; display:flex; justify-content:space-between;">
-                        <span id="categoryFoodQty">0份</span>
-                        <span id="categoryFoodProfit">C$ 0</span>
-                    </div>
-                </div>
-                <div style="background:#e3f2fd; padding:10px; border-radius:8px; border-left:4px solid #1565c0;">
-                    <div style="font-size:12px; color:#666;">酱油</div>
-                    <div style="font-size:16px; font-weight:bold;" id="categoryOtherAmount">C$ 0</div>
-                    <div style="font-size:12px; display:flex; justify-content:space-between;">
-                        <span id="categoryOtherQty">0</span>
-                        <span id="categoryOtherProfit">C$ 0</span>
-                    </div>
-                </div>
-            </div>
-        </div>
-        
-        <!-- 商品销售排行 -->
-        <div style="margin-bottom:20px;">
-            <h3 style="margin-bottom:10px;">🏆 商品销售排行</h3>
-            <div style="max-height:400px; overflow-y:auto; border:1px solid #ddd; border-radius:8px;">
-                <table style="width:100%;">
-                    <thead style="background:#f8f8f8; position:sticky; top:0;">
-                        <tr>
-                            <th>排名</th>
-                            <th>分类</th>
-                            <th>商品名称</th>
-                            <th>规格</th>
-                            <th>销量</th>
-                            <th>销售额</th>
-                            <th>利润</th>
-                        </tr>
-                    </thead>
-                    <tbody id="productSalesBody"></tbody>
-                </table>
             </div>
         </div>
     </div>
-</div>
+
     <!-- 库存总览（方便进货） -->
     <div class="card no-print" style="margin-bottom:15px; background:#fff; border-left:5px solid #2e7d32;">
         <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:10px;">
@@ -254,6 +265,7 @@
             <span>低库存商品: <span id="lowStockCount" style="color:#c62828;">0</span></span>
         </div>
     </div>
+
     <!-- 档案与分类 -->
     <div class="card admin-only no-print">
         <h3>🛠️ 档案与分类 / Maestro y Categorías</h3>
@@ -309,6 +321,13 @@
         <div class="fridge-card" id="btn-n1" onclick="selectArea('1号冰箱')">❄️ 1号/Nevera 1</div>
         <div class="fridge-card" id="btn-n2" onclick="selectArea('2号冰箱')">❄️ 2号/Nevera 2</div>
         <div class="fridge-card" id="btn-n3" onclick="selectArea('3号冰箱')">❄️ 3号/Nevera 3</div>
+    </div>
+
+    <!-- 排序控制按钮（只在冰箱区域显示） -->
+    <div class="no-print" id="sortControls" style="display: none; gap: 10px; margin-bottom: 10px; justify-content: flex-end;">
+        <button class="btn btn-blue" onclick="moveItemUp()" style="padding: 5px 15px;">↑ 上移</button>
+        <button class="btn btn-blue" onclick="moveItemDown()" style="padding: 5px 15px;">↓ 下移</button>
+        <span style="color: #666; font-size: 12px; align-self: center;">点击行选中，然后移动</span>
     </div>
 
     <div id="catNav" class="cat-bar no-print"></div>
@@ -393,6 +412,9 @@
     let syncInProgress = false;
     let autoSyncInterval = null;
 
+    // 排序相关
+    let sortOrder = [];
+
     // ==================== 时间处理函数 ====================
     function getNicaraguaTime() {
         const now = new Date();
@@ -441,8 +463,13 @@
             await firebase.auth().signInAnonymously();
             
             firebaseLoaded = true;
-            document.getElementById('cloud-status').innerHTML = '☁️ 云端: ✅ 已连接';
             
+            // 先加载本地数据
+            loadLocalData();
+            render();
+            renderStockSummary();
+            
+            // 再连接云端（只显示状态，不加载数据）
             await loadFromCloud();
             
         } catch (error) {
@@ -450,6 +477,7 @@
             document.getElementById('cloud-status').innerHTML = '☁️ 云端: ❌ 连接失败';
             loadLocalData();
             render();
+            renderStockSummary();
         }
     }
 
@@ -480,99 +508,62 @@
         });
     }
 
-    // ==================== 云端同步函数 ====================
+    // ==================== 云端同步函数（本地优先）====================
     async function saveToCloud() {
-    if (!firebaseLoaded || !firestore || syncInProgress) return false;
-    
-    try {
-        syncInProgress = true;
-        const syncTime = getNicaraguaISOString();  // 使用尼加拉瓜时间
-        await firestore.collection('inventoryData').doc('mainData').set({
-            master: master,
-            stocks: stocks,
-            logs: logs,
-            lastSync: syncTime
-        });
-        // 保存本地同步时间
-        localStorage.setItem('cn_lastSync', syncTime);
-        document.getElementById('cloud-status').innerHTML = '☁️ 云端: ✅ 已同步 ' + new Date().toLocaleTimeString();
-        return true;
-    } catch (error) {
-        console.error('保存到云端失败:', error);
-        document.getElementById('cloud-status').innerHTML = '☁️ 云端: ⚠️ 同步失败';
-        return false;
-    } finally {
-        syncInProgress = false;
+        if (!firebaseLoaded || !firestore || syncInProgress) return false;
+        
+        try {
+            syncInProgress = true;
+            const syncTime = getNicaraguaISOString();
+            
+            await firestore.collection('inventoryData').doc('mainData').set({
+                master: master,
+                stocks: stocks,
+                logs: logs,
+                lastSync: syncTime
+            });
+            
+            localStorage.setItem('cn_lastSync', syncTime);
+            document.getElementById('cloud-status').innerHTML = '☁️ 云端: ✅ 已备份 ' + new Date().toLocaleTimeString();
+            return true;
+        } catch (error) {
+            console.error('保存到云端失败:', error);
+            document.getElementById('cloud-status').innerHTML = '☁️ 云端: ⚠️ 备份失败';
+            return false;
+        } finally {
+            syncInProgress = false;
+        }
     }
-}
 
     async function loadFromCloud() {
-    if (!firebaseLoaded || !firestore) return false;
-    
-    try {
-        const doc = await firestore.collection('inventoryData').doc('mainData').get();
+        if (!firebaseLoaded || !firestore) return false;
         
-        if (doc.exists) {
-            const cloudData = doc.data();
+        try {
+            const doc = await firestore.collection('inventoryData').doc('mainData').get();
             
-            // 加载本地数据
-            const localMaster = JSON.parse(localStorage.getItem('cn_m21')) || [];
-            const localStocks = JSON.parse(localStorage.getItem('cn_s21')) || [];
-            const localLogs = JSON.parse(localStorage.getItem('cn_l21')) || [];
-            
-            // 获取云端最后同步时间
-            const cloudLastSync = cloudData.lastSync ? new Date(cloudData.lastSync) : new Date(0);
-            
-            // 获取本地最后修改时间
-            let localLastSync = localStorage.getItem('cn_lastSync');
-            localLastSync = localLastSync ? new Date(localLastSync) : new Date(0);
-            
-            // 如果云端更新，用云端的
-            if (cloudLastSync > localLastSync) {
-                master = cloudData.master || [];
-                stocks = cloudData.stocks || [];
-                logs = cloudData.logs || [];
-                document.getElementById('cloud-status').innerHTML = '☁️ 云端: ⬇️ 已下载最新';
+            if (doc.exists) {
+                const cloudData = doc.data();
+                document.getElementById('cloud-status').innerHTML = '☁️ 云端: 📦 有备份 (本地优先)';
             } else {
-                // 如果本地更新，用本地的并上传
-                master = localMaster;
-                stocks = localStocks;
-                logs = localLogs;
-                await saveToCloud(); // 上传本地数据到云端
-                document.getElementById('cloud-status').innerHTML = '☁️ 云端: ⬆️ 已上传本地';
+                document.getElementById('cloud-status').innerHTML = '☁️ 云端: 📭 无备份';
             }
-            
-            // 保存到localStorage
-            localStorage.setItem('cn_m21', JSON.stringify(master));
-            localStorage.setItem('cn_s21', JSON.stringify(stocks));
-            localStorage.setItem('cn_l21', JSON.stringify(logs));
-            localStorage.setItem('cn_lastSync', new Date().toISOString());
-            
-        } else {
-            // 云端没有数据，上传本地
-            if (master.length > 0 || stocks.length > 0 || logs.length > 0) {
-                await saveToCloud();
-                document.getElementById('cloud-status').innerHTML = '☁️ 云端: ⬆️ 首次上传';
-            }
+            return true;
+        } catch (error) {
+            console.error('从云端加载失败:', error);
+            return false;
         }
-        render();
-        renderStockSummary();
-        return true;
-    } catch (error) {
-        console.error('从云端加载失败:', error);
-        return false;
     }
-}
 
     // ==================== 保存数据（本地+云端）====================
     function save() {
-    localStorage.setItem('cn_m21', JSON.stringify(master));
-    localStorage.setItem('cn_s21', JSON.stringify(stocks));
-    localStorage.setItem('cn_l21', JSON.stringify(logs));
-    saveToCloud();
-    render();
-    renderStockSummary();  // 👈 在这里添加这一行
-}
+        localStorage.setItem('cn_m21', JSON.stringify(master));
+        localStorage.setItem('cn_s21', JSON.stringify(stocks));
+        localStorage.setItem('cn_l21', JSON.stringify(logs));
+        // 立即上传到云端，不等待
+        saveToCloud().catch(err => console.log('云端备份失败，但本地已保存'));
+        render();
+        renderStockSummary();
+    }
 
     // ==================== 权限登录 ====================
     function handleAuth() {
@@ -849,6 +840,20 @@
         document.getElementById(map[area]).classList.add('active');
         document.getElementById('areaTitle').innerText = `${area}`;
         document.getElementById('transferBox').style.display = (area==='总仓库'?'block':'none');
+        
+        // 显示/隐藏排序控制按钮（只在冰箱区域且管理员登录时显示）
+        const sortControls = document.getElementById('sortControls');
+        if (sortControls) {
+            sortControls.style.display = (isAdmin && area !== '总仓库') ? 'flex' : 'none';
+        }
+        
+        // 加载该区域的排序顺序
+        if (area !== '总仓库') {
+            sortOrder = JSON.parse(localStorage.getItem('cn_sort_' + area)) || [];
+        } else {
+            sortOrder = [];
+        }
+        
         render();
     }
 
@@ -913,12 +918,14 @@
         save();
     }
 
+    // ==================== 盘点功能（差额才是销售）====================
     function doCheck(id) {
         const input = document.getElementById(`input-${id}`), real = parseInt(input.value), s = stocks.find(x => x.id === id);
         if(!s) return;
         if(isNaN(real) || real < 0 || real > s.qty) return;
-        const gap = s.qty - real;
+        const gap = s.qty - real; // 差额 = 应有库存 - 实际库存
         if(gap > 0) {
+            // 只有正差额才记录为销售
             logs.push({
                 id: Date.now(), 
                 t: new Date().toISOString(), 
@@ -927,11 +934,94 @@
                 q: gap, 
                 amt: gap * s.price
             });
-            s.qty = real;
+            s.qty = real; // 更新为实际库存
         }
         input.value = ''; 
         save();
     }
+
+    // ==================== 排序功能 ====================
+    function moveItem(id, direction, currentIndex) {
+        if (!isAdmin) {
+            alert("只有管理员可操作");
+            return;
+        }
+        
+        let items = Array.from(document.querySelectorAll('#stockBody tr'));
+        let currentItem = items.find(item => item.dataset.id == id);
+        if (!currentItem) return;
+        
+        let newIndex = direction === 'up' ? currentIndex - 1 : currentIndex + 1;
+        if (newIndex < 0 || newIndex >= items.length) return;
+        
+        // 交换位置
+        let parent = currentItem.parentNode;
+        let nextItem = items[newIndex];
+        
+        if (direction === 'up') {
+            parent.insertBefore(currentItem, nextItem);
+        } else {
+            parent.insertBefore(nextItem, currentItem);
+        }
+        
+        // 更新索引显示
+        updateRowIndices();
+    }
+
+    function moveItemUp() {
+        if (!isAdmin) return;
+        let selectedRow = document.querySelector('#stockBody tr.selected');
+        if (!selectedRow) {
+            alert("请先点击选择要移动的商品行");
+            return;
+        }
+        let currentIndex = parseInt(selectedRow.dataset.index);
+        moveItem(selectedRow.dataset.id, 'up', currentIndex);
+    }
+
+    function moveItemDown() {
+        if (!isAdmin) return;
+        let selectedRow = document.querySelector('#stockBody tr.selected');
+        if (!selectedRow) {
+            alert("请先点击选择要移动的商品行");
+            return;
+        }
+        let currentIndex = parseInt(selectedRow.dataset.index);
+        moveItem(selectedRow.dataset.id, 'down', currentIndex);
+    }
+
+    function updateRowIndices() {
+        let rows = document.querySelectorAll('#stockBody tr');
+        rows.forEach((row, index) => {
+            row.dataset.index = index;
+        });
+        
+        // 保存排序顺序
+        saveSortOrder();
+    }
+
+    function saveSortOrder() {
+        if (!isAdmin || !activeArea || activeArea === '总仓库') return;
+        
+        let rows = document.querySelectorAll('#stockBody tr');
+        let newSortOrder = [];
+        rows.forEach(row => {
+            newSortOrder.push(parseInt(row.dataset.id));
+        });
+        
+        sortOrder = newSortOrder;
+        localStorage.setItem('cn_sort_' + activeArea, JSON.stringify(sortOrder));
+    }
+
+    // 点击行选中
+    document.addEventListener('click', function(e) {
+        let row = e.target.closest('#stockBody tr');
+        if (row) {
+            // 移除其他行的选中样式
+            document.querySelectorAll('#stockBody tr').forEach(r => r.classList.remove('selected'));
+            row.classList.add('selected');
+        }
+    });
 
     // ==================== 销售汇总功能 ====================
     function showSalesSummary() {
@@ -940,161 +1030,164 @@
     }
 
     function loadSalesSummary() {
-    // 设置默认日期（当月1日到今天）
-    const today = new Date();
-    const year = today.getFullYear();
-    const month = String(today.getMonth() + 1).padStart(2, '0');
-    const day = String(today.getDate()).padStart(2, '0');
-    const firstDayStr = `${year}-${month}-01`;
-    const todayStr = `${year}-${month}-${day}`;
-    
-    // 如果日期输入框是空的，设置默认值
-    if (!document.getElementById('salesStartDate').value) {
-        document.getElementById('salesStartDate').value = firstDayStr;
-    }
-    if (!document.getElementById('salesEndDate').value) {
-        document.getElementById('salesEndDate').value = todayStr;
-    }
-    
-    const startDate = document.getElementById('salesStartDate').value;
-    const endDate = document.getElementById('salesEndDate').value;
-    
-    // 获取所有销售记录
-    const salesLogs = logs.filter(log => 
-        log.type && 
-        log.type.includes('销售') && 
-        log.t
-    );
-    
-    // 按日期范围过滤
-    let filteredSales = salesLogs.filter(log => {
-        const logDate = log.t.split('T')[0];
-        return logDate >= startDate && logDate <= endDate;
-    });
-    
-    // 统计数据
-    let totalAmount = 0;
-    let totalQty = 0;
-    let totalProfit = 0;
-    
-    // 分类统计
-    let categories = {
-        '饮品': { amount: 0, qty: 0, profit: 0 },
-        '酒类': { amount: 0, qty: 0, profit: 0 },
-        '食材': { amount: 0, qty: 0, profit: 0 },
-        '其他': { amount: 0, qty: 0, profit: 0 }
-    };
-    
-    // 商品排行
-    let productMap = {};
-    
-    filteredSales.forEach(log => {
-        const amount = log.amt || 0;
-        const qty = log.q || 0;
-        const note = log.note || '';
+        // 设置默认日期（当月1日到今天）
+        const today = new Date();
+        const year = today.getFullYear();
+        const month = String(today.getMonth() + 1).padStart(2, '0');
+        const day = String(today.getDate()).padStart(2, '0');
+        const firstDayStr = `${year}-${month}-01`;
+        const todayStr = `${year}-${month}-${day}`;
         
-        // 累加总数
-        totalAmount += amount;
-        totalQty += qty;
-        totalProfit += amount * 0.3;
-        
-        // 解析商品名称
-        const productName = note.split('@')[0].replace('销售/Venta:', '').trim();
-        
-        // 查找商品分类
-        let category = '其他';
-        const product = master.find(m => m.name === productName);
-        if (product && product.cat) {
-            category = product.cat;
+        // 如果日期输入框是空的，设置默认值
+        if (!document.getElementById('salesStartDate').value) {
+            document.getElementById('salesStartDate').value = firstDayStr;
+        }
+        if (!document.getElementById('salesEndDate').value) {
+            document.getElementById('salesEndDate').value = todayStr;
         }
         
-        // 按分类统计
-        if (categories[category]) {
-            categories[category].amount += amount;
-            categories[category].qty += qty;
-            categories[category].profit += amount * 0.3;
+        const startDate = document.getElementById('salesStartDate').value;
+        const endDate = document.getElementById('salesEndDate').value;
+        
+        // 获取所有销售记录
+        const salesLogs = logs.filter(log => 
+            log.type && 
+            log.type.includes('销售') && 
+            log.t
+        );
+        
+        // 按日期范围过滤
+        let filteredSales = salesLogs.filter(log => {
+            const logDate = log.t.split('T')[0];
+            return logDate >= startDate && logDate <= endDate;
+        });
+        
+        // 统计数据
+        let totalAmount = 0;
+        let totalQty = 0;
+        let totalProfit = 0;
+        
+        // 分类统计
+        let categories = {
+            '饮品': { amount: 0, qty: 0, profit: 0 },
+            '酒类': { amount: 0, qty: 0, profit: 0 },
+            '拉面': { amount: 0, qty: 0, profit: 0 },
+            '酱油': { amount: 0, qty: 0, profit: 0 },
+            '其他': { amount: 0, qty: 0, profit: 0 }
+        };
+        
+        // 商品排行
+        let productMap = {};
+        
+        filteredSales.forEach(log => {
+            const amount = log.amt || 0;
+            const qty = log.q || 0;
+            const note = log.note || '';
+            
+            // 累加总数
+            totalAmount += amount;
+            totalQty += qty;
+            totalProfit += amount * 0.3;
+            
+            // 解析商品名称
+            const productName = note.split('@')[0].replace('销售/Venta:', '').trim();
+            
+            // 查找商品分类
+            let category = '其他';
+            const product = master.find(m => m.name === productName);
+            if (product && product.cat) {
+                category = product.cat;
+            }
+            
+            // 按分类统计
+            if (categories[category]) {
+                categories[category].amount += amount;
+                categories[category].qty += qty;
+                categories[category].profit += amount * 0.3;
+            } else {
+                categories['其他'].amount += amount;
+                categories['其他'].qty += qty;
+                categories['其他'].profit += amount * 0.3;
+            }
+            
+            // 商品排行统计
+            if (productName) {
+                if (!productMap[productName]) {
+                    productMap[productName] = {
+                        qty: 0,
+                        amount: 0,
+                        spec: '',
+                        profit: 0,
+                        category: category
+                    };
+                }
+                productMap[productName].qty += qty;
+                productMap[productName].amount += amount;
+                productMap[productName].profit += amount * 0.3;
+                
+                if (product) {
+                    productMap[productName].spec = product.spec || '';
+                }
+            }
+        });
+        
+        // 更新总览卡片
+        document.getElementById('summaryTotalAmount').innerText = `C$ ${totalAmount.toFixed(2)}`;
+        document.getElementById('summaryTotalQty').innerText = totalQty;
+        document.getElementById('summaryTotalProfit').innerText = `C$ ${totalProfit.toFixed(2)}`;
+        
+        // 更新分类统计
+        document.getElementById('categoryDrinkAmount').innerText = `C$ ${categories.饮品.amount.toFixed(2)}`;
+        document.getElementById('categoryDrinkQty').innerText = `${categories.饮品.qty}瓶`;
+        document.getElementById('categoryDrinkProfit').innerText = `C$ ${categories.饮品.profit.toFixed(2)}`;
+        
+        document.getElementById('categoryAlcoholAmount').innerText = `C$ ${categories.酒类.amount.toFixed(2)}`;
+        document.getElementById('categoryAlcoholQty').innerText = `${categories.酒类.qty}瓶`;
+        document.getElementById('categoryAlcoholProfit').innerText = `C$ ${categories.酒类.profit.toFixed(2)}`;
+        
+        document.getElementById('categoryFoodAmount').innerText = `C$ ${categories.拉面.amount.toFixed(2)}`;
+        document.getElementById('categoryFoodQty').innerText = `${categories.拉面.qty}份`;
+        document.getElementById('categoryFoodProfit').innerText = `C$ ${categories.拉面.profit.toFixed(2)}`;
+        
+        document.getElementById('categoryOtherAmount').innerText = `C$ ${categories.酱油.amount.toFixed(2)}`;
+        document.getElementById('categoryOtherQty').innerText = categories.酱油.qty;
+        document.getElementById('categoryOtherProfit').innerText = `C$ ${categories.酱油.profit.toFixed(2)}`;
+        
+        // 商品销售排行（按销量从高到低）
+        const productSorted = Object.entries(productMap)
+            .sort((a,b) => b[1].qty - a[1].qty);
+        
+        if (productSorted.length > 0) {
+            document.getElementById('productSalesBody').innerHTML = productSorted.map(([name, data], index) => {
+                // 分类颜色标记
+                let categoryColor = '';
+                if (data.category === '饮品') categoryColor = '#ff9800';
+                else if (data.category === '酒类') categoryColor = '#c62828';
+                else if (data.category === '拉面') categoryColor = '#2e7d32';
+                else if (data.category === '酱油') categoryColor = '#1565c0';
+                else categoryColor = '#9e9e9e';
+                
+                return `
+                    <tr>
+                        <td><strong>${index + 1}</strong></td>
+                        <td><span style="background:${categoryColor}; color:white; padding:2px 8px; border-radius:12px; font-size:11px;">${data.category}</span></td>
+                        <td>${name}</td>
+                        <td>${data.spec || '—'}</td>
+                        <td>${data.qty}</td>
+                        <td>C$ ${data.amount.toFixed(2)}</td>
+                        <td>C$ ${data.profit.toFixed(2)}</td>
+                    </tr>
+                `;
+            }).join('');
         } else {
-            categories['其他'].amount += amount;
-            categories['其他'].qty += qty;
-            categories['其他'].profit += amount * 0.3;
-        }
-        
-        // 商品排行统计
-        if (productName) {
-            if (!productMap[productName]) {
-                productMap[productName] = {
-                    qty: 0,
-                    amount: 0,
-                    spec: '',
-                    profit: 0,
-                    category: category
-                };
-            }
-            productMap[productName].qty += qty;
-            productMap[productName].amount += amount;
-            productMap[productName].profit += amount * 0.3;
-            
-            if (product) {
-                productMap[productName].spec = product.spec || '';
-            }
-        }
-    });
-    
-    // 更新总览卡片
-    document.getElementById('summaryTotalAmount').innerText = `C$ ${totalAmount.toFixed(2)}`;
-    document.getElementById('summaryTotalQty').innerText = totalQty;
-    document.getElementById('summaryTotalProfit').innerText = `C$ ${totalProfit.toFixed(2)}`;
-    
-    // 更新分类统计
-    document.getElementById('categoryDrinkAmount').innerText = `C$ ${categories.饮品.amount.toFixed(2)}`;
-    document.getElementById('categoryDrinkQty').innerText = `${categories.饮品.qty}瓶`;
-    document.getElementById('categoryDrinkProfit').innerText = `C$ ${categories.饮品.profit.toFixed(2)}`;
-    
-    document.getElementById('categoryAlcoholAmount').innerText = `C$ ${categories.酒类.amount.toFixed(2)}`;
-    document.getElementById('categoryAlcoholQty').innerText = `${categories.酒类.qty}瓶`;
-    document.getElementById('categoryAlcoholProfit').innerText = `C$ ${categories.酒类.profit.toFixed(2)}`;
-    
-    document.getElementById('categoryFoodAmount').innerText = `C$ ${categories.食材.amount.toFixed(2)}`;
-    document.getElementById('categoryFoodQty').innerText = `${categories.食材.qty}份`;
-    document.getElementById('categoryFoodProfit').innerText = `C$ ${categories.食材.profit.toFixed(2)}`;
-    
-    document.getElementById('categoryOtherAmount').innerText = `C$ ${categories.其他.amount.toFixed(2)}`;
-    document.getElementById('categoryOtherQty').innerText = categories.其他.qty;
-    document.getElementById('categoryOtherProfit').innerText = `C$ ${categories.其他.profit.toFixed(2)}`;
-    
-    // 商品销售排行（按销量从高到低）
-    const productSorted = Object.entries(productMap)
-        .sort((a,b) => b[1].qty - a[1].qty);
-    
-    if (productSorted.length > 0) {
-        document.getElementById('productSalesBody').innerHTML = productSorted.map(([name, data], index) => {
-            // 分类颜色标记
-            let categoryColor = '';
-            if (data.category === '饮品') categoryColor = '#ff9800';
-            else if (data.category === '酒类') categoryColor = '#c62828';
-            else if (data.category === '食材') categoryColor = '#2e7d32';
-            else categoryColor = '#1565c0';
-            
-            return `
+            document.getElementById('productSalesBody').innerHTML = `
                 <tr>
-                    <td><strong>${index + 1}</strong></td>
-                    <td><span style="background:${categoryColor}; color:white; padding:2px 8px; border-radius:12px; font-size:11px;">${data.category}</span></td>
-                    <td>${name}</td>
-                    <td>${data.spec || '—'}</td>
-                    <td>${data.qty}</td>
-                    <td>C$ ${data.amount.toFixed(2)}</td>
-                    <td>C$ ${data.profit.toFixed(2)}</td>
+                    <td colspan="7" style="text-align:center; padding:20px; color:#999;">暂无销售数据</td>
                 </tr>
             `;
-        }).join('');
-    } else {
-        document.getElementById('productSalesBody').innerHTML = `
-            <tr>
-                <td colspan="7" style="text-align:center; padding:20px; color:#999;">暂无销售数据</td>
-            </tr>
-        `;
+        }
     }
-}
+
     function exportSalesToExcel() {
         const startDate = document.getElementById('salesStartDate').value;
         const endDate = document.getElementById('salesEndDate').value;
@@ -1165,30 +1258,48 @@
         let displayStocks = stocks.filter(x => x.location === activeArea);
         if(activeCat !== "全部/Todo") displayStocks = displayStocks.filter(x => x.cat === activeCat);
         
-        let barcodeMap = new Map();
-        displayStocks.forEach(item => {
-            if (!barcodeMap.has(item.barcode)) {
-                barcodeMap.set(item.barcode, item);
-            }
-        });
-        displayStocks = Array.from(barcodeMap.values());
+        // 应用排序（只对冰箱区域）
+        if (activeArea !== '总仓库' && sortOrder.length > 0) {
+            displayStocks.sort((a, b) => {
+                let indexA = sortOrder.indexOf(a.id);
+                let indexB = sortOrder.indexOf(b.id);
+                if (indexA === -1) indexA = 999;
+                if (indexB === -1) indexB = 999;
+                return indexA - indexB;
+            });
+        }
         
-        document.getElementById('stockBody').innerHTML = displayStocks.map(s => `
-            <tr>
-                <td><small>${s.cat || ''}</small></td>
-                <td><b>${s.name || ''}</b> <span class="barcode-display">[${s.barcode || ''}]</span></td>
-                <td>${s.spec || ''}</td>
-                <td>C$ ${(s.price || 0).toFixed(1)}</td>
-                <td><b style="color:var(--main-red)">${s.qty || 0}</b></td>
-                <td class="input-area">
-                    <input type="number" id="input-${s.id}" style="width:40px"> 
-                    <button class="btn-red" onclick="doCheck(${s.id})">OK</button>
-                </td>
-                <td class="admin-only">
-                    <button class="btn-danger" onclick="deleteStockItem(${s.id})" style="background:#d32f2f; color:white; border:none; padding:2px 8px; border-radius:4px;">删除</button>
-                </td>
-            </tr>
-        `).join('');
+        document.getElementById('stockBody').innerHTML = displayStocks.map((s, index) => {
+            // 排序按钮（只在冰箱区域且管理员时显示）
+            let sortButtons = '';
+            if (isAdmin && activeArea !== '总仓库') {
+                sortButtons = `
+                    <div style="display: flex; gap: 5px;">
+                        <button class="btn-blue" style="padding:2px 8px;" onclick="event.stopPropagation(); moveItem('${s.id}', 'up', ${index})">↑</button>
+                        <button class="btn-blue" style="padding:2px 8px;" onclick="event.stopPropagation(); moveItem('${s.id}', 'down', ${index})">↓</button>
+                    </div>
+                `;
+            }
+            return `
+                <tr data-id="${s.id}" data-index="${index}">
+                    <td><small>${s.cat || ''}</small></td>
+                    <td><b>${s.name || ''}</b> <span class="barcode-display">[${s.barcode || ''}]</span></td>
+                    <td>${s.spec || ''}</td>
+                    <td>C$ ${(s.price || 0).toFixed(1)}</td>
+                    <td><b style="color:var(--main-red)">${s.qty || 0}</b></td>
+                    <td class="input-area">
+                        <input type="number" id="input-${s.id}" style="width:40px" onclick="event.stopPropagation()"> 
+                        <button class="btn-red" onclick="event.stopPropagation(); doCheck(${s.id})">OK</button>
+                    </td>
+                    <td class="admin-only" style="min-width: 100px;">
+                        <div style="display: flex; gap: 5px; align-items: center;">
+                            ${sortButtons}
+                            <button class="btn-danger" onclick="event.stopPropagation(); deleteStockItem(${s.id})" style="background:#d32f2f; color:white; border:none; padding:2px 8px; border-radius:4px;">🗑️</button>
+                        </div>
+                    </td>
+                </tr>
+            `;
+        }).join('');
 
         if(activeArea) {
             document.getElementById('areaSummaryLine').style.display = 'flex';
@@ -1238,7 +1349,7 @@
         }).join('');
         
         renderMasterList();
-        }  // render函数的结束
+    }
 
     // ==================== 库存总览功能 ====================
     function renderStockSummary() {
@@ -1334,23 +1445,17 @@
 
     // ==================== 初始化 ====================
     window.onload = () => {
-    loadLocalData();
-    render();
-    renderStockSummary();  // 👈 在这里添加这一行
-    initFirebase();
-    
-    autoSyncInterval = setInterval(() => {
-        if (firebaseLoaded && !syncInProgress) {
-            saveToCloud();
-        }
-    }, 5 * 60 * 1000);
-};
+        loadLocalData();
+        render();
+        renderStockSummary();
+        initFirebase();
+        
+        autoSyncInterval = setInterval(() => {
+            if (firebaseLoaded && !syncInProgress) {
+                saveToCloud();
+            }
+        }, 5 * 60 * 1000);
+    };
 </script>
 </body>
 </html>
-
-
-
-
-
-
