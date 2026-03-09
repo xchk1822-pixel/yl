@@ -415,17 +415,7 @@
     // 排序相关
     let sortOrder = [];
 
-    // ==================== 时间处理函数 ====================
-    function getNicaraguaTime() {
-        const now = new Date();
-        // 尼加拉瓜是 UTC-6
-        const nicaraguaTime = new Date(now.getTime() - (6 * 60 * 60 * 1000));
-        return nicaraguaTime;
-    }
 
-    function getNicaraguaISOString() {
-        return getNicaraguaTime().toISOString();
-    }
 
     // ==================== 加载本地数据 ====================
     function loadLocalData() {
@@ -510,30 +500,30 @@
 
     // ==================== 云端同步函数（本地优先）====================
     async function saveToCloud() {
-        if (!firebaseLoaded || !firestore || syncInProgress) return false;
+    if (!firebaseLoaded || !firestore || syncInProgress) return false;
+    
+    try {
+        syncInProgress = true;
+        const syncTime = new Date().toISOString();  // 使用电脑系统时间
         
-        try {
-            syncInProgress = true;
-            const syncTime = getNicaraguaISOString();
-            
-            await firestore.collection('inventoryData').doc('mainData').set({
-                master: master,
-                stocks: stocks,
-                logs: logs,
-                lastSync: syncTime
-            });
-            
-            localStorage.setItem('cn_lastSync', syncTime);
-            document.getElementById('cloud-status').innerHTML = '☁️ 云端: ✅ 已备份 ' + new Date().toLocaleTimeString();
-            return true;
-        } catch (error) {
-            console.error('保存到云端失败:', error);
-            document.getElementById('cloud-status').innerHTML = '☁️ 云端: ⚠️ 备份失败';
-            return false;
-        } finally {
-            syncInProgress = false;
-        }
+        await firestore.collection('inventoryData').doc('mainData').set({
+            master: master,
+            stocks: stocks,
+            logs: logs,
+            lastSync: syncTime
+        });
+        
+        localStorage.setItem('cn_lastSync', syncTime);
+        document.getElementById('cloud-status').innerHTML = '☁️ 云端: ✅ 已备份 ' + new Date().toLocaleTimeString();
+        return true;
+    } catch (error) {
+        console.error('保存到云端失败:', error);
+        document.getElementById('cloud-status').innerHTML = '☁️ 云端: ⚠️ 备份失败';
+        return false;
+    } finally {
+        syncInProgress = false;
     }
+}
 
     async function loadFromCloud() {
         if (!firebaseLoaded || !firestore) return false;
@@ -1459,3 +1449,4 @@
 </script>
 </body>
 </html>
+
