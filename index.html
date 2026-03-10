@@ -683,11 +683,13 @@
             });
         }
         // ====================================
-        
-        save();
-        clearMasterInputs();
-        alert(`商品信息已更新，库存已同步`);
-        return;
+
+save();
+clearMasterInputs();
+render();  // 确保有这一行
+renderStockSummary();  // 确保有这一行
+alert(`商品信息已更新，库存已同步`);
+return;
     }
 }
         else {
@@ -1499,6 +1501,7 @@
 </script>
 </body>
 </html>
+
 
 
 
