@@ -642,14 +642,55 @@
         );
         
         if (existing) {
-            if (confirm(`商品 "${name} ${spec}" 已存在，是否更新成本和售价？`)) {
-                existing.cost = cost;
-                existing.price = price;
-                save();
-                clearMasterInputs();
-                return;
-            }
+    if (confirm(`商品 "${name} ${spec}" 已存在，是否更新成本和售价？`)) {
+        // 记录旧的值用于匹配
+        const oldName = existing.name;
+        const oldSpec = existing.spec;
+        const oldBarcode = existing.barcode;
+        
+        // 更新档案
+        existing.cat = mainCat;
+        existing.name = name;
+        existing.spec = spec;
+        existing.cost = cost;
+        existing.price = price;
+        existing.barcode = barcode;
+        
+        // ===== 同步库存中的商品信息 =====
+        // 用条码匹配更新库存
+        if (oldBarcode) {
+            stocks.forEach(item => {
+                if (item.barcode === oldBarcode) {
+                    item.cat = mainCat;
+                    item.name = name;
+                    item.spec = spec;
+                    item.cost = cost;
+                    item.price = price;
+                    item.barcode = barcode;
+                }
+            });
         } else {
+            // 如果没有条码，用名称+规格匹配
+            stocks.forEach(item => {
+                if (item.name === oldName && item.spec === oldSpec) {
+                    item.cat = mainCat;
+                    item.name = name;
+                    item.spec = spec;
+                    item.cost = cost;
+                    item.price = price;
+                    item.barcode = barcode;
+                }
+            });
+        }
+        // ====================================
+        
+        save();
+        clearMasterInputs();
+        alert(`商品信息已更新，库存已同步`);
+        return;
+    }
+}
+        else {
             master.push({
                 id: Date.now(),
                 barcode: barcode,
@@ -676,30 +717,38 @@
     }
 
     function editMasterItem(id) {
-        if (!isAdmin) {
-            alert("只有管理员可操作 / Solo Admin");
+    if (!isAdmin) {
+        alert("只有管理员可操作 / Solo Admin");
+        return;
+    }
+    const item = master.find(m => m.id === id);
+    if (!item) return;
+    
+    const newBarcode = prompt("修改条码 (留空则不变):", item.barcode || '');
+    if (newBarcode !== null && newBarcode !== item.barcode) {
+        const existing = master.find(m => m.barcode === newBarcode && m.id !== id);
+        if (existing) {
+            alert(`条码 ${newBarcode} 已被商品 "${existing.name}" 使用`);
             return;
         }
-        const item = master.find(m => m.id === id);
-        if (!item) return;
-        
-        const newBarcode = prompt("修改条码 (留空则不变):", item.barcode || '');
-        if (newBarcode !== null && newBarcode !== item.barcode) {
-            const existing = master.find(m => m.barcode === newBarcode && m.id !== id);
-            if (existing) {
-                alert(`条码 ${newBarcode} 已被商品 "${existing.name}" 使用`);
-                return;
-            }
-            item.barcode = newBarcode;
-        }
-
-        document.getElementById('mBarcode').value = item.barcode || '';
-        document.getElementById('mMainCat').value = item.cat || '饮品';
-        document.getElementById('mName').value = item.name || '';
-        document.getElementById('mSpec').value = item.spec || '';
-        document.getElementById('mCost').value = item.cost || 0;
-        document.getElementById('mPrice').value = item.price || 0;
+        item.barcode = newBarcode;
     }
+
+    // 记录旧的值
+    const oldCost = item.cost;
+    const oldPrice = item.price;
+    const oldName = item.name;
+    const oldSpec = item.spec;
+    const oldCat = item.cat;
+
+    document.getElementById('mBarcode').value = item.barcode || '';
+    document.getElementById('mMainCat').value = item.cat || '饮品';
+    document.getElementById('mName').value = item.name || '';
+    document.getElementById('mSpec').value = item.spec || '';
+    document.getElementById('mCost').value = item.cost || 0;
+    document.getElementById('mPrice').value = item.price || 0;
+}
+
 
     function deleteMasterItem(id) {
         if (!isAdmin) {
@@ -1450,6 +1499,7 @@
 </script>
 </body>
 </html>
+
 
 
 
