@@ -889,11 +889,14 @@ return;
         }
         
         // 加载该区域的排序顺序
-        if (area !== '总仓库') {
-            sortOrder = JSON.parse(localStorage.getItem('cn_sort_' + area)) || [];
-        } else {
-            sortOrder = [];
-        }
+if (area !== '总仓库') {
+    let savedSort = localStorage.getItem('cn_sort_' + area);
+    console.log('从localStorage读取:', area, savedSort);
+    sortOrder = savedSort ? JSON.parse(savedSort) : [];
+    console.log('解析后的sortOrder:', sortOrder);
+} else {
+    sortOrder = [];
+}
         
         render();
     }
@@ -1269,6 +1272,7 @@ return;
     }
 
     function render() {
+        console.log('render开始 - 当前区域:', activeArea, 'sortOrder:', sortOrder);
         document.body.className = isAdmin ? "admin-mode" : "";
         
         const cats = ["全部/Todo", ...new Set(master.map(m => m.cat))];
@@ -1507,6 +1511,7 @@ console.log('商品ID列表:', displayStocks.map(s => ({id: s.id, name: s.name})
 </script>
 </body>
 </html>
+
 
 
 
