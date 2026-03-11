@@ -971,11 +971,13 @@
     }
 
     // 保存排序
-    function saveSortOrder(area, order) {
-        if (!area || area === '总仓库') return;
-        localStorage.setItem('cn_sort_' + area, JSON.stringify(order));
-        console.log('排序已保存', area, order);
-    }
+function saveSortOrder(area, order) {
+    if (!area || area === '总仓库') return;
+    localStorage.setItem('cn_sort_' + area, JSON.stringify(order));
+    console.log('排序已保存', area, order);
+    // 立即验证保存是否成功
+    console.log('验证读取:', localStorage.getItem('cn_sort_' + area));
+}
 
     // 移动商品
     function moveItem(id, direction, currentIndex) {
@@ -1267,17 +1269,28 @@
         let displayStocks = stocks.filter(x => x.location === activeArea);
         if(activeCat !== "全部/Todo") displayStocks = displayStocks.filter(x => x.cat === activeCat);
         
-        // 获取当前区域的排序并应用
-        const currentSort = getSortOrder(activeArea);
-        if (activeArea !== '总仓库' && currentSort.length > 0) {
-            displayStocks.sort((a, b) => {
-                let indexA = currentSort.indexOf(a.id);
-                let indexB = currentSort.indexOf(b.id);
-                if (indexA === -1) indexA = 999;
-                if (indexB === -1) indexB = 999;
-                return indexA - indexB;
-            });
+        // 强制从 localStorage 读取排序并应用
+if (activeArea !== '总仓库') {
+    const savedSort = localStorage.getItem('cn_sort_' + activeArea);
+    if (savedSort) {
+        try {
+            const currentSort = JSON.parse(savedSort);
+            console.log('加载排序:', activeArea, currentSort);
+            
+            if (currentSort.length > 0) {
+                displayStocks.sort((a, b) => {
+                    let indexA = currentSort.indexOf(a.id);
+                    let indexB = currentSort.indexOf(b.id);
+                    if (indexA === -1) indexA = 999;
+                    if (indexB === -1) indexB = 999;
+                    return indexA - indexB;
+                });
+            }
+        } catch (e) {
+            console.error('排序加载失败', e);
         }
+    }
+}
         
         document.getElementById('stockBody').innerHTML = displayStocks.map((s, index) => {
             let sortButtons = '';
@@ -1467,6 +1480,7 @@
 </script>
 </body>
 </html>
+
 
 
 
