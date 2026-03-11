@@ -386,6 +386,7 @@
 </div>
 
 <script>
+    <script>
     // ==================== Firebase 配置 ====================
     const firebaseConfig = {
         apiKey: "AIzaSyC3ADmd485_ITMpwaLbLDtctrROiwLHbHw",
@@ -412,11 +413,6 @@
     let syncInProgress = false;
     let autoSyncInterval = null;
 
-    // 排序相关
-    let sortOrder = [];
-
-
-
     // ==================== 加载本地数据 ====================
     function loadLocalData() {
         master = JSON.parse(localStorage.getItem('cn_m21')) || [];
@@ -424,17 +420,16 @@
         logs = JSON.parse(localStorage.getItem('cn_l21')) || [];
         
         stocks = stocks.map(s => ({
-    id: s.id || Date.now(),
-    barcode: s.barcode || '',
-    cat: s.cat || "未分类",
-    name: s.name || "未知",
-    spec: s.spec || "",
-    qty: s.qty || 0,
-    cost: s.cost || 0,
-    price: s.price || 0,
-    location: s.location || "总仓库",
-    sortIndex: s.sortIndex || undefined  // 保留排序索引
-}));
+            id: s.id || Date.now(),
+            barcode: s.barcode || '',
+            cat: s.cat || "未分类",
+            name: s.name || "未知",
+            spec: s.spec || "",
+            qty: s.qty || 0,
+            cost: s.cost || 0,
+            price: s.price || 0,
+            location: s.location || "总仓库"
+        }));
     }
 
     // ==================== Firebase 初始化 ====================
@@ -455,12 +450,10 @@
             
             firebaseLoaded = true;
             
-            // 先加载本地数据
             loadLocalData();
             render();
             renderStockSummary();
             
-            // 再连接云端（只显示状态，不加载数据）
             await loadFromCloud();
             
         } catch (error) {
@@ -499,32 +492,32 @@
         });
     }
 
-    // ==================== 云端同步函数（本地优先）====================
+    // ==================== 云端同步函数 ====================
     async function saveToCloud() {
-    if (!firebaseLoaded || !firestore || syncInProgress) return false;
-    
-    try {
-        syncInProgress = true;
-        const syncTime = new Date().toISOString();  // 使用电脑系统时间
+        if (!firebaseLoaded || !firestore || syncInProgress) return false;
         
-        await firestore.collection('inventoryData').doc('mainData').set({
-            master: master,
-            stocks: stocks,
-            logs: logs,
-            lastSync: syncTime
-        });
-        
-        localStorage.setItem('cn_lastSync', syncTime);
-        document.getElementById('cloud-status').innerHTML = '☁️ 云端: ✅ 已备份 ' + new Date().toLocaleTimeString();
-        return true;
-    } catch (error) {
-        console.error('保存到云端失败:', error);
-        document.getElementById('cloud-status').innerHTML = '☁️ 云端: ⚠️ 备份失败';
-        return false;
-    } finally {
-        syncInProgress = false;
+        try {
+            syncInProgress = true;
+            const syncTime = new Date().toISOString();
+            
+            await firestore.collection('inventoryData').doc('mainData').set({
+                master: master,
+                stocks: stocks,
+                logs: logs,
+                lastSync: syncTime
+            });
+            
+            localStorage.setItem('cn_lastSync', syncTime);
+            document.getElementById('cloud-status').innerHTML = '☁️ 云端: ✅ 已备份 ' + new Date().toLocaleTimeString();
+            return true;
+        } catch (error) {
+            console.error('保存到云端失败:', error);
+            document.getElementById('cloud-status').innerHTML = '☁️ 云端: ⚠️ 备份失败';
+            return false;
+        } finally {
+            syncInProgress = false;
+        }
     }
-}
 
     async function loadFromCloud() {
         if (!firebaseLoaded || !firestore) return false;
@@ -545,32 +538,27 @@
         }
     }
 
-    // ==================== 保存数据（本地+云端）====================
-async function save() {
-    // 1. 预防日志过大导致 LocalStorage 溢出
-    if (logs.length > 500) {
-        logs = logs.slice(-500); // 仅保留最近 500 条日志
-    }
+    // ==================== 保存数据 ====================
+    async function save() {
+        if (logs.length > 500) {
+            logs = logs.slice(-500);
+        }
 
-    // 2. 本地持久化
-    localStorage.setItem('cn_m21', JSON.stringify(master));
-    localStorage.setItem('cn_s21', JSON.stringify(stocks));
-    localStorage.setItem('cn_l21', JSON.stringify(logs));
-    
-    // 3. 同步到云端并等待结果
-    document.getElementById('cloud-status').innerHTML = '☁️ 云端: 同步中...';
-    
-    const success = await saveToCloud();
-    
-    // 4. 更新 UI 状态
-    if (!success) {
-        document.getElementById('cloud-status').innerHTML = '☁️ 云端: ⚠️ 上传失败';
-    }
+        localStorage.setItem('cn_m21', JSON.stringify(master));
+        localStorage.setItem('cn_s21', JSON.stringify(stocks));
+        localStorage.setItem('cn_l21', JSON.stringify(logs));
+        
+        document.getElementById('cloud-status').innerHTML = '☁️ 云端: 同步中...';
+        
+        const success = await saveToCloud();
+        
+        if (!success) {
+            document.getElementById('cloud-status').innerHTML = '☁️ 云端: ⚠️ 上传失败';
+        }
 
-    // 5. 刷新界面
-    render();
-    renderStockSummary();
-}
+        render();
+        renderStockSummary();
+    }
 
     // ==================== 权限登录 ====================
     function handleAuth() {
@@ -625,7 +613,7 @@ async function save() {
         }
     }
 
-    // ==================== 保存档案（带条码）====================
+    // ==================== 保存档案 ====================
     function saveMaster() {
         if (!isAdmin) {
             alert("只有管理员可操作 / Solo Admin");
@@ -659,57 +647,50 @@ async function save() {
         );
         
         if (existing) {
-    if (confirm(`商品 "${name} ${spec}" 已存在，是否更新成本和售价？`)) {
-        // 记录旧的值用于匹配
-        const oldName = existing.name;
-        const oldSpec = existing.spec;
-        const oldBarcode = existing.barcode;
-        
-        // 更新档案
-        existing.cat = mainCat;
-        existing.name = name;
-        existing.spec = spec;
-        existing.cost = cost;
-        existing.price = price;
-        existing.barcode = barcode;
-        
-        // ===== 同步库存中的商品信息 =====
-        // 用条码匹配更新库存
-        if (oldBarcode) {
-            stocks.forEach(item => {
-                if (item.barcode === oldBarcode) {
-                    item.cat = mainCat;
-                    item.name = name;
-                    item.spec = spec;
-                    item.cost = cost;
-                    item.price = price;
-                    item.barcode = barcode;
+            if (confirm(`商品 "${name} ${spec}" 已存在，是否更新成本和售价？`)) {
+                const oldName = existing.name;
+                const oldSpec = existing.spec;
+                const oldBarcode = existing.barcode;
+                
+                existing.cat = mainCat;
+                existing.name = name;
+                existing.spec = spec;
+                existing.cost = cost;
+                existing.price = price;
+                existing.barcode = barcode;
+                
+                if (oldBarcode) {
+                    stocks.forEach(item => {
+                        if (item.barcode === oldBarcode) {
+                            item.cat = mainCat;
+                            item.name = name;
+                            item.spec = spec;
+                            item.cost = cost;
+                            item.price = price;
+                            item.barcode = barcode;
+                        }
+                    });
+                } else {
+                    stocks.forEach(item => {
+                        if (item.name === oldName && item.spec === oldSpec) {
+                            item.cat = mainCat;
+                            item.name = name;
+                            item.spec = spec;
+                            item.cost = cost;
+                            item.price = price;
+                            item.barcode = barcode;
+                        }
+                    });
                 }
-            });
-        } else {
-            // 如果没有条码，用名称+规格匹配
-            stocks.forEach(item => {
-                if (item.name === oldName && item.spec === oldSpec) {
-                    item.cat = mainCat;
-                    item.name = name;
-                    item.spec = spec;
-                    item.cost = cost;
-                    item.price = price;
-                    item.barcode = barcode;
-                }
-            });
-        }
-        // ====================================
 
-save();
-clearMasterInputs();
-render();  // 确保有这一行
-renderStockSummary();  // 确保有这一行
-alert(`商品信息已更新，库存已同步`);
-return;
-    }
-}
-        else {
+                save();
+                clearMasterInputs();
+                render();
+                renderStockSummary();
+                alert(`商品信息已更新，库存已同步`);
+                return;
+            }
+        } else {
             master.push({
                 id: Date.now(),
                 barcode: barcode,
@@ -736,38 +717,30 @@ return;
     }
 
     function editMasterItem(id) {
-    if (!isAdmin) {
-        alert("只有管理员可操作 / Solo Admin");
-        return;
-    }
-    const item = master.find(m => m.id === id);
-    if (!item) return;
-    
-    const newBarcode = prompt("修改条码 (留空则不变):", item.barcode || '');
-    if (newBarcode !== null && newBarcode !== item.barcode) {
-        const existing = master.find(m => m.barcode === newBarcode && m.id !== id);
-        if (existing) {
-            alert(`条码 ${newBarcode} 已被商品 "${existing.name}" 使用`);
+        if (!isAdmin) {
+            alert("只有管理员可操作 / Solo Admin");
             return;
         }
-        item.barcode = newBarcode;
+        const item = master.find(m => m.id === id);
+        if (!item) return;
+        
+        const newBarcode = prompt("修改条码 (留空则不变):", item.barcode || '');
+        if (newBarcode !== null && newBarcode !== item.barcode) {
+            const existing = master.find(m => m.barcode === newBarcode && m.id !== id);
+            if (existing) {
+                alert(`条码 ${newBarcode} 已被商品 "${existing.name}" 使用`);
+                return;
+            }
+            item.barcode = newBarcode;
+        }
+
+        document.getElementById('mBarcode').value = item.barcode || '';
+        document.getElementById('mMainCat').value = item.cat || '饮品';
+        document.getElementById('mName').value = item.name || '';
+        document.getElementById('mSpec').value = item.spec || '';
+        document.getElementById('mCost').value = item.cost || 0;
+        document.getElementById('mPrice').value = item.price || 0;
     }
-
-    // 记录旧的值
-    const oldCost = item.cost;
-    const oldPrice = item.price;
-    const oldName = item.name;
-    const oldSpec = item.spec;
-    const oldCat = item.cat;
-
-    document.getElementById('mBarcode').value = item.barcode || '';
-    document.getElementById('mMainCat').value = item.cat || '饮品';
-    document.getElementById('mName').value = item.name || '';
-    document.getElementById('mSpec').value = item.spec || '';
-    document.getElementById('mCost').value = item.cost || 0;
-    document.getElementById('mPrice').value = item.price || 0;
-}
-
 
     function deleteMasterItem(id) {
         if (!isAdmin) {
@@ -891,35 +864,22 @@ return;
         tempBillItems=[]; renderTempBill(); save();
     }
 
+    // ==================== 区域选择 ====================
     function selectArea(area) {
-    activeArea = area;
-    document.querySelectorAll('.fridge-card').forEach(c => c.classList.remove('active'));
-    const map = {'总仓库':'btn-wh','1号冰箱':'btn-n1','2号冰箱':'btn-n2','3号冰箱':'btn-n3'};
-    document.getElementById(map[area]).classList.add('active');
-    document.getElementById('areaTitle').innerText = `${area}`;
-    document.getElementById('transferBox').style.display = (area==='总仓库'?'block':'none');
-    
-    const sortControls = document.getElementById('sortControls');
-    if (sortControls) {
-        sortControls.style.display = (isAdmin && area !== '总仓库') ? 'flex' : 'none';
-    }
-    
-    // 加载排序并立即渲染
-    if (area !== '总仓库') {
-        sortOrder = JSON.parse(localStorage.getItem('cn_sort_' + area)) || [];
-        render();
+        activeArea = area;
+        document.querySelectorAll('.fridge-card').forEach(c => c.classList.remove('active'));
+        const map = {'总仓库':'btn-wh','1号冰箱':'btn-n1','2号冰箱':'btn-n2','3号冰箱':'btn-n3'};
+        document.getElementById(map[area]).classList.add('active');
+        document.getElementById('areaTitle').innerText = `${area}`;
+        document.getElementById('transferBox').style.display = (area==='总仓库'?'block':'none');
         
-        // 关键：延时再次渲染，确保 DOM 完全更新
-        setTimeout(() => {
-            if (activeArea === area) {
-                render();
-            }
-        }, 50);
-    } else {
-        sortOrder = [];
+        const sortControls = document.getElementById('sortControls');
+        if (sortControls) {
+            sortControls.style.display = (isAdmin && area !== '总仓库') ? 'flex' : 'none';
+        }
+        
         render();
     }
-}
 
     function execMove() {
         const sid = document.getElementById('moveS').value;
@@ -982,14 +942,13 @@ return;
         save();
     }
 
-    // ==================== 盘点功能（差额才是销售）====================
+    // ==================== 盘点功能 ====================
     function doCheck(id) {
         const input = document.getElementById(`input-${id}`), real = parseInt(input.value), s = stocks.find(x => x.id === id);
         if(!s) return;
         if(isNaN(real) || real < 0 || real > s.qty) return;
-        const gap = s.qty - real; // 差额 = 应有库存 - 实际库存
+        const gap = s.qty - real;
         if(gap > 0) {
-            // 只有正差额才记录为销售
             logs.push({
                 id: Date.now(), 
                 t: new Date().toLocaleString('sv').replace(' ', 'T'),
@@ -998,13 +957,28 @@ return;
                 q: gap, 
                 amt: gap * s.price
             });
-            s.qty = real; // 更新为实际库存
+            s.qty = real;
         }
         input.value = ''; 
         save();
     }
 
-    // ==================== 排序功能 ====================
+    // ==================== 排序功能（全新简化版）====================
+    // 获取当前区域的排序
+    function getSortOrder(area) {
+        if (!area || area === '总仓库') return [];
+        const saved = localStorage.getItem('cn_sort_' + area);
+        return saved ? JSON.parse(saved) : [];
+    }
+
+    // 保存排序
+    function saveSortOrder(area, order) {
+        if (!area || area === '总仓库') return;
+        localStorage.setItem('cn_sort_' + area, JSON.stringify(order));
+        console.log('排序已保存', area, order);
+    }
+
+    // 移动商品
     function moveItem(id, direction, currentIndex) {
         if (!isAdmin) {
             alert("只有管理员可操作");
@@ -1018,7 +992,6 @@ return;
         let newIndex = direction === 'up' ? currentIndex - 1 : currentIndex + 1;
         if (newIndex < 0 || newIndex >= items.length) return;
         
-        // 交换位置
         let parent = currentItem.parentNode;
         let nextItem = items[newIndex];
         
@@ -1028,8 +1001,20 @@ return;
             parent.insertBefore(nextItem, currentItem);
         }
         
-        // 更新索引显示
-        updateRowIndices();
+        // 更新所有行的索引
+        let rows = document.querySelectorAll('#stockBody tr');
+        let newOrder = [];
+        rows.forEach(row => {
+            newOrder.push(parseInt(row.dataset.id));
+        });
+        
+        // 保存新顺序
+        saveSortOrder(activeArea, newOrder);
+        
+        // 更新显示的索引
+        rows.forEach((row, idx) => {
+            row.dataset.index = idx;
+        });
     }
 
     function moveItemUp() {
@@ -1054,40 +1039,10 @@ return;
         moveItem(selectedRow.dataset.id, 'down', currentIndex);
     }
 
-    function updateRowIndices() {
-        let rows = document.querySelectorAll('#stockBody tr');
-        rows.forEach((row, index) => {
-            row.dataset.index = index;
-        });
-        
-        // 保存排序顺序
-        saveSortOrder();
-    }
-
-    function saveSortOrder() {
-    if (!isAdmin || !activeArea || activeArea === '总仓库') return;
-    
-    let rows = document.querySelectorAll('#stockBody tr');
-    let newSortOrder = [];
-    rows.forEach(row => {
-        newSortOrder.push(parseInt(row.dataset.id));
-    });
-    
-    sortOrder = newSortOrder;
-    
-    // 保存到 localStorage（原有的方式）
-    localStorage.setItem('cn_sort_' + activeArea, JSON.stringify(sortOrder));
-    
-    
-    
-    console.log('排序已保存', activeArea, sortOrder);
-}
-
     // 点击行选中
     document.addEventListener('click', function(e) {
         let row = e.target.closest('#stockBody tr');
         if (row) {
-            // 移除其他行的选中样式
             document.querySelectorAll('#stockBody tr').forEach(r => r.classList.remove('selected'));
             row.classList.add('selected');
         }
@@ -1095,13 +1050,11 @@ return;
 
     // ==================== 销售汇总功能 ====================
     function showSalesSummary() {
-    // 移除权限检查，所有人都能看
-    document.getElementById('salesSummaryModal').style.display = 'block';
-    loadSalesSummary();
-}
+        document.getElementById('salesSummaryModal').style.display = 'block';
+        loadSalesSummary();
+    }
 
     function loadSalesSummary() {
-        // 设置默认日期（当月1日到今天）
         const today = new Date();
         const year = today.getFullYear();
         const month = String(today.getMonth() + 1).padStart(2, '0');
@@ -1109,7 +1062,6 @@ return;
         const firstDayStr = `${year}-${month}-01`;
         const todayStr = `${year}-${month}-${day}`;
         
-        // 如果日期输入框是空的，设置默认值
         if (!document.getElementById('salesStartDate').value) {
             document.getElementById('salesStartDate').value = firstDayStr;
         }
@@ -1120,25 +1072,21 @@ return;
         const startDate = document.getElementById('salesStartDate').value;
         const endDate = document.getElementById('salesEndDate').value;
         
-        // 获取所有销售记录
         const salesLogs = logs.filter(log => 
             log.type && 
             log.type.includes('销售') && 
             log.t
         );
         
-        // 按日期范围过滤
         let filteredSales = salesLogs.filter(log => {
             const logDate = log.t.split('T')[0];
             return logDate >= startDate && logDate <= endDate;
         });
         
-        // 统计数据
         let totalAmount = 0;
         let totalQty = 0;
         let totalProfit = 0;
         
-        // 分类统计
         let categories = {
             '饮品': { amount: 0, qty: 0, profit: 0 },
             '酒类': { amount: 0, qty: 0, profit: 0 },
@@ -1147,7 +1095,6 @@ return;
             '其他': { amount: 0, qty: 0, profit: 0 }
         };
         
-        // 商品排行
         let productMap = {};
         
         filteredSales.forEach(log => {
@@ -1155,22 +1102,18 @@ return;
             const qty = log.q || 0;
             const note = log.note || '';
             
-            // 累加总数
             totalAmount += amount;
             totalQty += qty;
             totalProfit += amount * 0.3;
             
-            // 解析商品名称
             const productName = note.split('@')[0].replace('销售/Venta:', '').trim();
             
-            // 查找商品分类
             let category = '其他';
             const product = master.find(m => m.name === productName);
             if (product && product.cat) {
                 category = product.cat;
             }
             
-            // 按分类统计
             if (categories[category]) {
                 categories[category].amount += amount;
                 categories[category].qty += qty;
@@ -1181,7 +1124,6 @@ return;
                 categories['其他'].profit += amount * 0.3;
             }
             
-            // 商品排行统计
             if (productName) {
                 if (!productMap[productName]) {
                     productMap[productName] = {
@@ -1202,12 +1144,10 @@ return;
             }
         });
         
-        // 更新总览卡片
         document.getElementById('summaryTotalAmount').innerText = `C$ ${totalAmount.toFixed(2)}`;
         document.getElementById('summaryTotalQty').innerText = totalQty;
         document.getElementById('summaryTotalProfit').innerText = `C$ ${totalProfit.toFixed(2)}`;
         
-        // 更新分类统计
         document.getElementById('categoryDrinkAmount').innerText = `C$ ${categories.饮品.amount.toFixed(2)}`;
         document.getElementById('categoryDrinkQty').innerText = `${categories.饮品.qty}瓶`;
         document.getElementById('categoryDrinkProfit').innerText = `C$ ${categories.饮品.profit.toFixed(2)}`;
@@ -1224,13 +1164,11 @@ return;
         document.getElementById('categoryOtherQty').innerText = categories.酱油.qty;
         document.getElementById('categoryOtherProfit').innerText = `C$ ${categories.酱油.profit.toFixed(2)}`;
         
-        // 商品销售排行（按销量从高到低）
         const productSorted = Object.entries(productMap)
             .sort((a,b) => b[1].qty - a[1].qty);
         
         if (productSorted.length > 0) {
             document.getElementById('productSalesBody').innerHTML = productSorted.map(([name, data], index) => {
-                // 分类颜色标记
                 let categoryColor = '';
                 if (data.category === '饮品') categoryColor = '#ff9800';
                 else if (data.category === '酒类') categoryColor = '#c62828';
@@ -1295,13 +1233,9 @@ return;
         URL.revokeObjectURL(url);
     }
 
+    // ==================== 渲染函数 ====================
     function render() {
-    // 【核心修复：在渲染前，根据当前活跃区域更新 sortOrder】
-    // 之前你的 sortOrder 可能没更新，这里强制从 localStorage 读最新的
-    sortOrder = JSON.parse(localStorage.getItem('cn_sort_' + activeArea) || '[]');
-    
-    console.log('render开始 - 当前区域:', activeArea, 'sortOrder:', sortOrder);
-    document.body.className = isAdmin ? "admin-mode" : "";
+        document.body.className = isAdmin ? "admin-mode" : "";
         
         const cats = ["全部/Todo", ...new Set(master.map(m => m.cat))];
         document.getElementById('catNav').innerHTML = cats.map(c => `<button class="cat-btn ${activeCat===c?'active':''}" onclick="activeCat='${c}';render()">${c}</button>`).join('');
@@ -1332,25 +1266,21 @@ return;
         document.getElementById('dashStockValue').innerText = `C$ ${totalStockVal.toFixed(0)}`;
 
         let displayStocks = stocks.filter(x => x.location === activeArea);
-if(activeCat !== "全部/Todo") displayStocks = displayStocks.filter(x => x.cat === activeCat);
-
-// 应用排序（只使用 sortOrder）
-if (activeArea !== '总仓库' && sortOrder.length > 0) {
-    displayStocks.sort((a, b) => {
-        let indexA = sortOrder.indexOf(a.id);
-        let indexB = sortOrder.indexOf(b.id);
-        if (indexA === -1) indexA = 999;
-        if (indexB === -1) indexB = 999;
-        return indexA - indexB;
-    });
-}
-
-// 调试：查看排序后的数据
-console.log('区域:', activeArea);
-console.log('排序后商品:', displayStocks.map(s => ({id: s.id, name: s.name})));
+        if(activeCat !== "全部/Todo") displayStocks = displayStocks.filter(x => x.cat === activeCat);
+        
+        // 获取当前区域的排序并应用
+        const currentSort = getSortOrder(activeArea);
+        if (activeArea !== '总仓库' && currentSort.length > 0) {
+            displayStocks.sort((a, b) => {
+                let indexA = currentSort.indexOf(a.id);
+                let indexB = currentSort.indexOf(b.id);
+                if (indexA === -1) indexA = 999;
+                if (indexB === -1) indexB = 999;
+                return indexA - indexB;
+            });
+        }
         
         document.getElementById('stockBody').innerHTML = displayStocks.map((s, index) => {
-            // 排序按钮（只在冰箱区域且管理员时显示）
             let sortButtons = '';
             if (isAdmin && activeArea !== '总仓库') {
                 sortButtons = `
@@ -1433,7 +1363,6 @@ console.log('排序后商品:', displayStocks.map(s => ({id: s.id, name: s.name}
 
     // ==================== 库存总览功能 ====================
     function renderStockSummary() {
-        // 获取所有商品（按条码/名称去重）
         let productMap = new Map();
         
         stocks.forEach(item => {
@@ -1539,6 +1468,7 @@ console.log('排序后商品:', displayStocks.map(s => ({id: s.id, name: s.name}
 </script>
 </body>
 </html>
+
 
 
 
