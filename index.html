@@ -864,21 +864,29 @@
     }
 
     // ==================== 区域选择 ====================
-    function selectArea(area) {
-        activeArea = area;
-        document.querySelectorAll('.fridge-card').forEach(c => c.classList.remove('active'));
-        const map = {'总仓库':'btn-wh','1号冰箱':'btn-n1','2号冰箱':'btn-n2','3号冰箱':'btn-n3'};
-        document.getElementById(map[area]).classList.add('active');
-        document.getElementById('areaTitle').innerText = `${area}`;
-        document.getElementById('transferBox').style.display = (area==='总仓库'?'block':'none');
-        
-        const sortControls = document.getElementById('sortControls');
-        if (sortControls) {
-            sortControls.style.display = (isAdmin && area !== '总仓库') ? 'flex' : 'none';
-        }
-        
-        render();
+function selectArea(area) {
+    activeArea = area;
+    document.querySelectorAll('.fridge-card').forEach(c => c.classList.remove('active'));
+    const map = {'总仓库':'btn-wh','1号冰箱':'btn-n1','2号冰箱':'btn-n2','3号冰箱':'btn-n3'};
+    document.getElementById(map[area]).classList.add('active');
+    document.getElementById('areaTitle').innerText = `${area}`;
+    document.getElementById('transferBox').style.display = (area==='总仓库'?'block':'none');
+    
+    const sortControls = document.getElementById('sortControls');
+    if (sortControls) {
+        sortControls.style.display = (isAdmin && area !== '总仓库') ? 'flex' : 'none';
     }
+    
+    render(); // 原来的
+    
+    // 新增：强制再次渲染
+    setTimeout(() => {
+        if (activeArea === area) {
+            console.log('强制重新渲染:', area);
+            render();
+        }
+    }, 100);
+}
 
     function execMove() {
         const sid = document.getElementById('moveS').value;
@@ -1466,20 +1474,32 @@ if (activeArea !== '总仓库') {
 
     // ==================== 初始化 ====================
     window.onload = () => {
-        loadLocalData();
+    loadLocalData();
+    render();
+    renderStockSummary();
+    initFirebase();
+    
+    // 强制应用排序（延迟执行确保DOM加载完成）
+    setTimeout(() => {
+        console.log('强制刷新排序');
         render();
-        renderStockSummary();
-        initFirebase();
-        
-        autoSyncInterval = setInterval(() => {
-            if (firebaseLoaded && !syncInProgress) {
-                saveToCloud();
-            }
-        }, 3 * 60 * 1000);
-    };
+    }, 500);
+    
+    setTimeout(() => {
+        console.log('再次强制刷新排序');
+        render();
+    }, 1000);
+    
+    autoSyncInterval = setInterval(() => {
+        if (firebaseLoaded && !syncInProgress) {
+            saveToCloud();
+        }
+    }, 3 * 60 * 1000);
+};
 </script>
 </body>
 </html>
+
 
 
 
