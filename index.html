@@ -1314,6 +1314,7 @@ console.log('商品ID列表:', displayStocks.map(s => ({id: s.id, name: s.name})
                 if (indexB === -1) indexB = 999;
                 return indexA - indexB;
             });
+        console.log('应用排序后:', displayStocks.map(s => s.name));
         }
         
         document.getElementById('stockBody').innerHTML = displayStocks.map((s, index) => {
@@ -1506,6 +1507,7 @@ console.log('商品ID列表:', displayStocks.map(s => ({id: s.id, name: s.name})
 </script>
 </body>
 </html>
+
 
 
 
