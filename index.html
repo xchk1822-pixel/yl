@@ -891,31 +891,41 @@ return;
     }
 
     function selectArea(area) {
-        activeArea = area;
-        document.querySelectorAll('.fridge-card').forEach(c => c.classList.remove('active'));
-        const map = {'总仓库':'btn-wh','1号冰箱':'btn-n1','2号冰箱':'btn-n2','3号冰箱':'btn-n3'};
-        document.getElementById(map[area]).classList.add('active');
-        document.getElementById('areaTitle').innerText = `${area}`;
-        document.getElementById('transferBox').style.display = (area==='总仓库'?'block':'none');
-        
-        // 显示/隐藏排序控制按钮（只在冰箱区域且管理员登录时显示）
-        const sortControls = document.getElementById('sortControls');
-        if (sortControls) {
-            sortControls.style.display = (isAdmin && area !== '总仓库') ? 'flex' : 'none';
-        }
-        
-        // 加载该区域的排序顺序
-if (area !== '总仓库') {
-    let savedSort = localStorage.getItem('cn_sort_' + area);
-    console.log('从localStorage读取:', area, savedSort);
-    sortOrder = savedSort ? JSON.parse(savedSort) : [];
-    console.log('解析后的sortOrder:', sortOrder);
-} else {
-    sortOrder = [];
-}
-        
-        render();
+    activeArea = area;
+    document.querySelectorAll('.fridge-card').forEach(c => c.classList.remove('active'));
+    const map = {'总仓库':'btn-wh','1号冰箱':'btn-n1','2号冰箱':'btn-n2','3号冰箱':'btn-n3'};
+    document.getElementById(map[area]).classList.add('active');
+    document.getElementById('areaTitle').innerText = `${area}`;
+    document.getElementById('transferBox').style.display = (area==='总仓库'?'block':'none');
+    
+    // 显示/隐藏排序控制按钮（只在冰箱区域且管理员登录时显示）
+    const sortControls = document.getElementById('sortControls');
+    if (sortControls) {
+        sortControls.style.display = (isAdmin && area !== '总仓库') ? 'flex' : 'none';
     }
+    
+    // 加载该区域的排序顺序
+    if (area !== '总仓库') {
+        let savedSort = localStorage.getItem('cn_sort_' + area);
+        console.log('加载排序 - 区域:', area, '原始数据:', savedSort);
+        sortOrder = savedSort ? JSON.parse(savedSort) : [];
+        console.log('加载排序 - 解析后:', sortOrder);
+    } else {
+        sortOrder = [];
+        console.log('总仓库区域，清空排序');
+    }
+    
+    // 渲染页面
+    render();
+    
+    // 强制再渲染一次，确保排序生效
+    if (area !== '总仓库' && sortOrder.length > 0) {
+        setTimeout(() => {
+            console.log('强制重新渲染排序');
+            render();
+        }, 50);
+    }
+}
 
     function execMove() {
         const sid = document.getElementById('moveS').value;
@@ -1531,6 +1541,7 @@ console.log('商品ID列表:', displayStocks.map(s => ({id: s.id, name: s.name})
 </script>
 </body>
 </html>
+
 
 
 
