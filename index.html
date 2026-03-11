@@ -424,16 +424,17 @@
         logs = JSON.parse(localStorage.getItem('cn_l21')) || [];
         
         stocks = stocks.map(s => ({
-            id: s.id || Date.now(),
-            barcode: s.barcode || '',
-            cat: s.cat || "未分类",
-            name: s.name || "未知",
-            spec: s.spec || "",
-            qty: s.qty || 0,
-            cost: s.cost || 0,
-            price: s.price || 0,
-            location: s.location || "总仓库"
-        }));
+    id: s.id || Date.now(),
+    barcode: s.barcode || '',
+    cat: s.cat || "未分类",
+    name: s.name || "未知",
+    spec: s.spec || "",
+    qty: s.qty || 0,
+    cost: s.cost || 0,
+    price: s.price || 0,
+    location: s.location || "总仓库",
+    sortIndex: s.sortIndex || undefined  // 保留排序索引
+}));
     }
 
     // ==================== Firebase 初始化 ====================
@@ -1064,19 +1065,36 @@ return;
     }
 
     function saveSortOrder() {
-        if (!isAdmin || !activeArea || activeArea === '总仓库') return;
-        
-        let rows = document.querySelectorAll('#stockBody tr');
-        let newSortOrder = [];
-        rows.forEach(row => {
-            newSortOrder.push(parseInt(row.dataset.id));
-        });
-        
-        sortOrder = newSortOrder;
-        localStorage.setItem('cn_sort_' + activeArea, JSON.stringify(sortOrder));
-        // 添加调试代码，可以在控制台查看是否保存成功
+    if (!isAdmin || !activeArea || activeArea === '总仓库') return;
+    
+    let rows = document.querySelectorAll('#stockBody tr');
+    let newSortOrder = [];
+    rows.forEach(row => {
+        newSortOrder.push(parseInt(row.dataset.id));
+    });
+    
+    sortOrder = newSortOrder;
+    
+    // 保存到 localStorage（原有的方式）
+    localStorage.setItem('cn_sort_' + activeArea, JSON.stringify(sortOrder));
+    
+    // ===== 新增：把排序信息保存到每个商品中 =====
+    // 给每个商品添加一个 sortIndex 字段
+    stocks.forEach(item => {
+        if (item.location === activeArea) {
+            let index = sortOrder.indexOf(item.id);
+            if (index !== -1) {
+                item.sortIndex = index;
+            }
+        }
+    });
+    
+    // 保存到 localStorage
+    localStorage.setItem('cn_s21', JSON.stringify(stocks));
+    // ==========================================
+    
     console.log('排序已保存', activeArea, sortOrder);
-    }
+}
 
     // 点击行选中
     document.addEventListener('click', function(e) {
@@ -1329,19 +1347,30 @@ return;
         let displayStocks = stocks.filter(x => x.location === activeArea);
 if(activeCat !== "全部/Todo") displayStocks = displayStocks.filter(x => x.cat === activeCat);
 
-// 强制从 localStorage 重新读取排序
+// 应用排序（优先使用 sortIndex）
 if (activeArea !== '总仓库') {
-    let savedSort = localStorage.getItem('cn_sort_' + activeArea);
-    if (savedSort) {
-        sortOrder = JSON.parse(savedSort);
-        console.log('render中强制加载排序:', activeArea, sortOrder);
+    // 先按 sortIndex 排序（如果有）
+    displayStocks.sort((a, b) => {
+        let indexA = a.sortIndex !== undefined ? a.sortIndex : 999;
+        let indexB = b.sortIndex !== undefined ? b.sortIndex : 999;
+        return indexA - indexB;
+    });
+    
+    // 然后再按 sortOrder 调整（如果有）
+    if (sortOrder.length > 0) {
+        displayStocks.sort((a, b) => {
+            let indexA = sortOrder.indexOf(a.id);
+            let indexB = sortOrder.indexOf(b.id);
+            if (indexA === -1) indexA = a.sortIndex !== undefined ? a.sortIndex + 1000 : 999;
+            if (indexB === -1) indexB = b.sortIndex !== undefined ? b.sortIndex + 1000 : 999;
+            return indexA - indexB;
+        });
     }
 }
 
-// 调试：查看排序前后的数据
-console.log('排序前 - 区域:', activeArea);
-console.log('排序顺序:', sortOrder);
-console.log('商品ID列表:', displayStocks.map(s => ({id: s.id, name: s.name})));
+// 调试：查看排序后的数据
+console.log('区域:', activeArea);
+console.log('排序后商品:', displayStocks.map(s => ({id: s.id, name: s.name, sortIndex: s.sortIndex})));
         // 应用排序（只对冰箱区域）
         if (activeArea !== '总仓库' && sortOrder.length > 0) {
             displayStocks.sort((a, b) => {
@@ -1544,6 +1573,7 @@ console.log('商品ID列表:', displayStocks.map(s => ({id: s.id, name: s.name})
 </script>
 </body>
 </html>
+
 
 
 
