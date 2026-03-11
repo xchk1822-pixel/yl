@@ -1299,7 +1299,10 @@ return;
 
         let displayStocks = stocks.filter(x => x.location === activeArea);
         if(activeCat !== "全部/Todo") displayStocks = displayStocks.filter(x => x.cat === activeCat);
-        
+        // 调试：查看排序前后的数据
+console.log('排序前 - 区域:', activeArea);
+console.log('排序顺序:', sortOrder);
+console.log('商品ID列表:', displayStocks.map(s => ({id: s.id, name: s.name})));
         // 应用排序（只对冰箱区域）
         if (activeArea !== '总仓库' && sortOrder.length > 0) {
             displayStocks.sort((a, b) => {
@@ -1501,6 +1504,7 @@ return;
 </script>
 </body>
 </html>
+
 
 
 
