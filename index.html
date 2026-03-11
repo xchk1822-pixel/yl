@@ -545,15 +545,31 @@
     }
 
     // ==================== 保存数据（本地+云端）====================
-    function save() {
-        localStorage.setItem('cn_m21', JSON.stringify(master));
-        localStorage.setItem('cn_s21', JSON.stringify(stocks));
-        localStorage.setItem('cn_l21', JSON.stringify(logs));
-        // 立即上传到云端，不等待
-        saveToCloud().catch(err => console.log('云端备份失败，但本地已保存'));
-        render();
-        renderStockSummary();
+async function save() {
+    // 1. 预防日志过大导致 LocalStorage 溢出
+    if (logs.length > 500) {
+        logs = logs.slice(-500); // 仅保留最近 500 条日志
     }
+
+    // 2. 本地持久化
+    localStorage.setItem('cn_m21', JSON.stringify(master));
+    localStorage.setItem('cn_s21', JSON.stringify(stocks));
+    localStorage.setItem('cn_l21', JSON.stringify(logs));
+    
+    // 3. 同步到云端并等待结果
+    document.getElementById('cloud-status').innerHTML = '☁️ 云端: 同步中...';
+    
+    const success = await saveToCloud();
+    
+    // 4. 更新 UI 状态
+    if (!success) {
+        document.getElementById('cloud-status').innerHTML = '☁️ 云端: ⚠️ 上传失败';
+    }
+
+    // 5. 刷新界面
+    render();
+    renderStockSummary();
+}
 
     // ==================== 权限登录 ====================
     function handleAuth() {
@@ -1272,8 +1288,12 @@ if (area !== '总仓库') {
     }
 
     function render() {
-        console.log('render开始 - 当前区域:', activeArea, 'sortOrder:', sortOrder);
-        document.body.className = isAdmin ? "admin-mode" : "";
+    // 【核心修复：在渲染前，根据当前活跃区域更新 sortOrder】
+    // 之前你的 sortOrder 可能没更新，这里强制从 localStorage 读最新的
+    sortOrder = JSON.parse(localStorage.getItem('cn_sort_' + activeArea) || '[]');
+    
+    console.log('render开始 - 当前区域:', activeArea, 'sortOrder:', sortOrder);
+    document.body.className = isAdmin ? "admin-mode" : "";
         
         const cats = ["全部/Todo", ...new Set(master.map(m => m.cat))];
         document.getElementById('catNav').innerHTML = cats.map(c => `<button class="cat-btn ${activeCat===c?'active':''}" onclick="activeCat='${c}';render()">${c}</button>`).join('');
@@ -1506,11 +1526,12 @@ console.log('商品ID列表:', displayStocks.map(s => ({id: s.id, name: s.name})
             if (firebaseLoaded && !syncInProgress) {
                 saveToCloud();
             }
-        }, 5 * 60 * 1000);
+        }, 3 * 60 * 1000);
     };
 </script>
 </body>
 </html>
+
 
 
 
