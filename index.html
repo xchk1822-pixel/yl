@@ -1327,8 +1327,18 @@ return;
         document.getElementById('dashStockValue').innerText = `C$ ${totalStockVal.toFixed(0)}`;
 
         let displayStocks = stocks.filter(x => x.location === activeArea);
-        if(activeCat !== "全部/Todo") displayStocks = displayStocks.filter(x => x.cat === activeCat);
-        // 调试：查看排序前后的数据
+if(activeCat !== "全部/Todo") displayStocks = displayStocks.filter(x => x.cat === activeCat);
+
+// 强制从 localStorage 重新读取排序
+if (activeArea !== '总仓库') {
+    let savedSort = localStorage.getItem('cn_sort_' + activeArea);
+    if (savedSort) {
+        sortOrder = JSON.parse(savedSort);
+        console.log('render中强制加载排序:', activeArea, sortOrder);
+    }
+}
+
+// 调试：查看排序前后的数据
 console.log('排序前 - 区域:', activeArea);
 console.log('排序顺序:', sortOrder);
 console.log('商品ID列表:', displayStocks.map(s => ({id: s.id, name: s.name})));
@@ -1534,6 +1544,7 @@ console.log('商品ID列表:', displayStocks.map(s => ({id: s.id, name: s.name})
 </script>
 </body>
 </html>
+
 
 
 
