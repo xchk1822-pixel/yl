@@ -412,6 +412,9 @@
     let syncInProgress = false;
     let autoSyncInterval = null;
 
+    // 排序相关 - 简化版
+    let sortOrder = [];
+
     // ==================== 加载本地数据 ====================
     function loadLocalData() {
         master = JSON.parse(localStorage.getItem('cn_m21')) || [];
@@ -874,6 +877,14 @@
             sortControls.style.display = (isAdmin && area !== '总仓库') ? 'flex' : 'none';
         }
         
+        // 加载该区域的排序
+        if (area !== '总仓库') {
+            const saved = localStorage.getItem('cn_sort_' + area);
+            sortOrder = saved ? JSON.parse(saved) : [];
+        } else {
+            sortOrder = [];
+        }
+        
         render();
     }
 
@@ -959,19 +970,19 @@
         save();
     }
 
-    // ==================== 排序功能 ====================
-    let sortOrder = [];
-
-    function getSortOrder(area) {
-        if (!area || area === '总仓库') return [];
-        const saved = localStorage.getItem('cn_sort_' + area);
-        return saved ? JSON.parse(saved) : [];
-    }
-
-    function saveSortOrder(area, order) {
-        if (!area || area === '总仓库') return;
-        localStorage.setItem('cn_sort_' + area, JSON.stringify(order));
-        sortOrder = order;
+    // ==================== 排序功能（极简版）====================
+    function saveSortOrder() {
+        if (!isAdmin || !activeArea || activeArea === '总仓库') return;
+        
+        let rows = document.querySelectorAll('#stockBody tr');
+        let newOrder = [];
+        rows.forEach(row => {
+            newOrder.push(parseInt(row.dataset.id));
+        });
+        
+        sortOrder = newOrder;
+        localStorage.setItem('cn_sort_' + activeArea, JSON.stringify(sortOrder));
+        console.log('排序已保存', activeArea, sortOrder);
     }
 
     function moveItem(id, direction, currentIndex) {
@@ -996,17 +1007,13 @@
             parent.insertBefore(nextItem, currentItem);
         }
         
+        // 更新索引并保存
         let rows = document.querySelectorAll('#stockBody tr');
-        let newOrder = [];
-        rows.forEach(row => {
-            newOrder.push(parseInt(row.dataset.id));
-        });
-        
-        saveSortOrder(activeArea, newOrder);
-        
         rows.forEach((row, idx) => {
             row.dataset.index = idx;
         });
+        
+        saveSortOrder();
     }
 
     function moveItemUp() {
@@ -1031,6 +1038,7 @@
         moveItem(selectedRow.dataset.id, 'down', currentIndex);
     }
 
+    // 点击行选中
     document.addEventListener('click', function(e) {
         let row = e.target.closest('#stockBody tr');
         if (row) {
@@ -1258,16 +1266,25 @@
         let displayStocks = stocks.filter(x => x.location === activeArea);
         if(activeCat !== "全部/Todo") displayStocks = displayStocks.filter(x => x.cat === activeCat);
         
-        // 获取当前区域的排序并应用
-        const currentSort = getSortOrder(activeArea);
-        if (activeArea !== '总仓库' && currentSort.length > 0) {
-            displayStocks.sort((a, b) => {
-                let indexA = currentSort.indexOf(a.id);
-                let indexB = currentSort.indexOf(b.id);
-                if (indexA === -1) indexA = 999;
-                if (indexB === -1) indexB = 999;
-                return indexA - indexB;
-            });
+        // 加载排序并应用
+        if (activeArea !== '总仓库') {
+            const saved = localStorage.getItem('cn_sort_' + activeArea);
+            if (saved) {
+                try {
+                    const currentSort = JSON.parse(saved);
+                    if (currentSort.length > 0) {
+                        displayStocks.sort((a, b) => {
+                            let indexA = currentSort.indexOf(a.id);
+                            let indexB = currentSort.indexOf(b.id);
+                            if (indexA === -1) indexA = 999;
+                            if (indexB === -1) indexB = 999;
+                            return indexA - indexB;
+                        });
+                    }
+                } catch (e) {
+                    console.error('排序加载失败', e);
+                }
+            }
         }
         
         document.getElementById('stockBody').innerHTML = displayStocks.map((s, index) => {
