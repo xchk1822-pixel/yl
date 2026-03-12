@@ -419,16 +419,17 @@
         logs = JSON.parse(localStorage.getItem('cn_l21')) || [];
         
         stocks = stocks.map(s => ({
-            id: s.id || Date.now(),
-            barcode: s.barcode || '',
-            cat: s.cat || "未分类",
-            name: s.name || "未知",
-            spec: s.spec || "",
-            qty: s.qty || 0,
-            cost: s.cost || 0,
-            price: s.price || 0,
-            location: s.location || "总仓库"
-        }));
+    id: s.id || Date.now(),
+    barcode: s.barcode || '',
+    cat: s.cat || "未分类",
+    name: s.name || "未知",
+    spec: s.spec || "",
+    qty: s.qty || 0,
+    cost: s.cost || 0,
+    price: s.price || 0,
+    location: s.location || "总仓库",
+    sortIndex: s.sortIndex // 保留排序索引
+}));
     }
 
     // ==================== Firebase 初始化 ====================
@@ -1277,24 +1278,32 @@ function saveSortOrder(area, order) {
         let displayStocks = stocks.filter(x => x.location === activeArea);
         if(activeCat !== "全部/Todo") displayStocks = displayStocks.filter(x => x.cat === activeCat);
         
-        // 强制从 localStorage 读取排序并应用
+        
+// 获取当前区域的排序
 if (activeArea !== '总仓库') {
-    const savedSort = localStorage.getItem('cn_sort_' + activeArea);
-    if (savedSort) {
-        try {
-            const currentSort = JSON.parse(savedSort);
-            console.log('加载排序:', activeArea, currentSort);
-            
-            if (currentSort.length > 0) {
-                displayStocks.sort((a, b) => {
-                    let indexA = currentSort.indexOf(a.id);
-                    let indexB = currentSort.indexOf(b.id);
-                    if (indexA === -1) indexA = 999;
-                    if (indexB === -1) indexB = 999;
-                    return indexA - indexB;
-                });
-            }
-        } catch (e) {
+    // 先从 localStorage 读取排序
+    let savedSort = localStorage.getItem('cn_sort_' + activeArea);
+    let currentSort = savedSort ? JSON.parse(savedSort) : [];
+    
+    // 如果 localStorage 中没有，尝试从 stocks 中读取 sortIndex
+    if (currentSort.length === 0) {
+        // 按 sortIndex 排序
+        displayStocks.sort((a, b) => {
+            let indexA = a.sortIndex !== undefined ? a.sortIndex : 999;
+            let indexB = b.sortIndex !== undefined ? b.sortIndex : 999;
+            return indexA - indexB;
+        });
+    } else {
+        // 按保存的排序顺序排序
+        displayStocks.sort((a, b) => {
+            let indexA = currentSort.indexOf(a.id);
+            let indexB = currentSort.indexOf(b.id);
+            if (indexA === -1) indexA = 999;
+            if (indexB === -1) indexB = 999;
+            return indexA - indexB;
+        });
+    }
+} catch (e) {
             console.error('排序加载失败', e);
         }
     }
@@ -1499,6 +1508,7 @@ if (activeArea !== '总仓库') {
 </script>
 </body>
 </html>
+
 
 
 
