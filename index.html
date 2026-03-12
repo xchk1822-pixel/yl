@@ -1281,31 +1281,31 @@ function saveSortOrder(area, order) {
         
 // 获取当前区域的排序
 if (activeArea !== '总仓库') {
-    // 先从 localStorage 读取排序
-    let savedSort = localStorage.getItem('cn_sort_' + activeArea);
-    let currentSort = savedSort ? JSON.parse(savedSort) : [];
-    
-    // 如果 localStorage 中没有，尝试从 stocks 中读取 sortIndex
-    if (currentSort.length === 0) {
-        // 按 sortIndex 排序
-        displayStocks.sort((a, b) => {
-            let indexA = a.sortIndex !== undefined ? a.sortIndex : 999;
-            let indexB = b.sortIndex !== undefined ? b.sortIndex : 999;
-            return indexA - indexB;
-        });
-    } else {
-        // 按保存的排序顺序排序
-        displayStocks.sort((a, b) => {
-            let indexA = currentSort.indexOf(a.id);
-            let indexB = currentSort.indexOf(b.id);
-            if (indexA === -1) indexA = 999;
-            if (indexB === -1) indexB = 999;
-            return indexA - indexB;
-        });
-    }
-} catch (e) {
-            console.error('排序加载失败', e);
+    try {
+        // 先从 localStorage 读取排序
+        let savedSort = localStorage.getItem('cn_sort_' + activeArea);
+        let currentSort = savedSort ? JSON.parse(savedSort) : [];
+        
+        // 如果 localStorage 中没有，尝试从 stocks 中读取 sortIndex
+        if (currentSort.length === 0) {
+            // 按 sortIndex 排序
+            displayStocks.sort((a, b) => {
+                let indexA = a.sortIndex !== undefined ? a.sortIndex : 999;
+                let indexB = b.sortIndex !== undefined ? b.sortIndex : 999;
+                return indexA - indexB;
+            });
+        } else {
+            // 按保存的排序顺序排序
+            displayStocks.sort((a, b) => {
+                let indexA = currentSort.indexOf(a.id);
+                let indexB = currentSort.indexOf(b.id);
+                if (indexA === -1) indexA = 999;
+                if (indexB === -1) indexB = 999;
+                return indexA - indexB;
+            });
         }
+    } catch (e) {
+        console.error('排序加载失败', e);
     }
 }
         
@@ -1508,6 +1508,7 @@ if (activeArea !== '总仓库') {
 </script>
 </body>
 </html>
+
 
 
 
