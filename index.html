@@ -419,17 +419,16 @@
         logs = JSON.parse(localStorage.getItem('cn_l21')) || [];
         
         stocks = stocks.map(s => ({
-    id: s.id || Date.now(),
-    barcode: s.barcode || '',
-    cat: s.cat || "未分类",
-    name: s.name || "未知",
-    spec: s.spec || "",
-    qty: s.qty || 0,
-    cost: s.cost || 0,
-    price: s.price || 0,
-    location: s.location || "总仓库",
-    sortIndex: s.sortIndex // 保留排序索引
-}));
+            id: s.id || Date.now(),
+            barcode: s.barcode || '',
+            cat: s.cat || "未分类",
+            name: s.name || "未知",
+            spec: s.spec || "",
+            qty: s.qty || 0,
+            cost: s.cost || 0,
+            price: s.price || 0,
+            location: s.location || "总仓库"
+        }));
     }
 
     // ==================== Firebase 初始化 ====================
@@ -685,8 +684,6 @@
 
                 save();
                 clearMasterInputs();
-                render();
-                renderStockSummary();
                 alert(`商品信息已更新，库存已同步`);
                 return;
             }
@@ -864,30 +861,21 @@
         tempBillItems=[]; renderTempBill(); save();
     }
 
-    // ==================== 区域选择 ====================
-function selectArea(area) {
-    activeArea = area;
-    document.querySelectorAll('.fridge-card').forEach(c => c.classList.remove('active'));
-    const map = {'总仓库':'btn-wh','1号冰箱':'btn-n1','2号冰箱':'btn-n2','3号冰箱':'btn-n3'};
-    document.getElementById(map[area]).classList.add('active');
-    document.getElementById('areaTitle').innerText = `${area}`;
-    document.getElementById('transferBox').style.display = (area==='总仓库'?'block':'none');
-    
-    const sortControls = document.getElementById('sortControls');
-    if (sortControls) {
-        sortControls.style.display = (isAdmin && area !== '总仓库') ? 'flex' : 'none';
-    }
-    
-    render(); // 原来的
-    
-    // 新增：强制再次渲染
-    setTimeout(() => {
-        if (activeArea === area) {
-            console.log('强制重新渲染:', area);
-            render();
+    function selectArea(area) {
+        activeArea = area;
+        document.querySelectorAll('.fridge-card').forEach(c => c.classList.remove('active'));
+        const map = {'总仓库':'btn-wh','1号冰箱':'btn-n1','2号冰箱':'btn-n2','3号冰箱':'btn-n3'};
+        document.getElementById(map[area]).classList.add('active');
+        document.getElementById('areaTitle').innerText = `${area}`;
+        document.getElementById('transferBox').style.display = (area==='总仓库'?'block':'none');
+        
+        const sortControls = document.getElementById('sortControls');
+        if (sortControls) {
+            sortControls.style.display = (isAdmin && area !== '总仓库') ? 'flex' : 'none';
         }
-    }, 100);
-}
+        
+        render();
+    }
 
     function execMove() {
         const sid = document.getElementById('moveS').value;
@@ -971,24 +959,21 @@ function selectArea(area) {
         save();
     }
 
-    // ==================== 排序功能（全新简化版）====================
-    // 获取当前区域的排序
+    // ==================== 排序功能 ====================
+    let sortOrder = [];
+
     function getSortOrder(area) {
         if (!area || area === '总仓库') return [];
         const saved = localStorage.getItem('cn_sort_' + area);
         return saved ? JSON.parse(saved) : [];
     }
 
-    // 保存排序
-function saveSortOrder(area, order) {
-    if (!area || area === '总仓库') return;
-    localStorage.setItem('cn_sort_' + area, JSON.stringify(order));
-    console.log('排序已保存', area, order);
-    // 立即验证保存是否成功
-    console.log('验证读取:', localStorage.getItem('cn_sort_' + area));
-}
+    function saveSortOrder(area, order) {
+        if (!area || area === '总仓库') return;
+        localStorage.setItem('cn_sort_' + area, JSON.stringify(order));
+        sortOrder = order;
+    }
 
-    // 移动商品
     function moveItem(id, direction, currentIndex) {
         if (!isAdmin) {
             alert("只有管理员可操作");
@@ -1011,17 +996,14 @@ function saveSortOrder(area, order) {
             parent.insertBefore(nextItem, currentItem);
         }
         
-        // 更新所有行的索引
         let rows = document.querySelectorAll('#stockBody tr');
         let newOrder = [];
         rows.forEach(row => {
             newOrder.push(parseInt(row.dataset.id));
         });
         
-        // 保存新顺序
         saveSortOrder(activeArea, newOrder);
         
-        // 更新显示的索引
         rows.forEach((row, idx) => {
             row.dataset.index = idx;
         });
@@ -1049,7 +1031,6 @@ function saveSortOrder(area, order) {
         moveItem(selectedRow.dataset.id, 'down', currentIndex);
     }
 
-    // 点击行选中
     document.addEventListener('click', function(e) {
         let row = e.target.closest('#stockBody tr');
         if (row) {
@@ -1243,7 +1224,6 @@ function saveSortOrder(area, order) {
         URL.revokeObjectURL(url);
     }
 
-    // ==================== 渲染函数 ====================
     function render() {
         document.body.className = isAdmin ? "admin-mode" : "";
         
@@ -1278,24 +1258,9 @@ function saveSortOrder(area, order) {
         let displayStocks = stocks.filter(x => x.location === activeArea);
         if(activeCat !== "全部/Todo") displayStocks = displayStocks.filter(x => x.cat === activeCat);
         
-        
-// 获取当前区域的排序
-if (activeArea !== '总仓库') {
-    try {
-        // 先从 localStorage 读取排序
-        let savedSort = localStorage.getItem('cn_sort_' + activeArea);
-        let currentSort = savedSort ? JSON.parse(savedSort) : [];
-        
-        // 如果 localStorage 中没有，尝试从 stocks 中读取 sortIndex
-        if (currentSort.length === 0) {
-            // 按 sortIndex 排序
-            displayStocks.sort((a, b) => {
-                let indexA = a.sortIndex !== undefined ? a.sortIndex : 999;
-                let indexB = b.sortIndex !== undefined ? b.sortIndex : 999;
-                return indexA - indexB;
-            });
-        } else {
-            // 按保存的排序顺序排序
+        // 获取当前区域的排序并应用
+        const currentSort = getSortOrder(activeArea);
+        if (activeArea !== '总仓库' && currentSort.length > 0) {
             displayStocks.sort((a, b) => {
                 let indexA = currentSort.indexOf(a.id);
                 let indexB = currentSort.indexOf(b.id);
@@ -1304,10 +1269,6 @@ if (activeArea !== '总仓库') {
                 return indexA - indexB;
             });
         }
-    } catch (e) {
-        console.error('排序加载失败', e);
-    }
-}
         
         document.getElementById('stockBody').innerHTML = displayStocks.map((s, index) => {
             let sortButtons = '';
@@ -1483,49 +1444,17 @@ if (activeArea !== '总仓库') {
 
     // ==================== 初始化 ====================
     window.onload = () => {
-    loadLocalData();
-    render();
-    renderStockSummary();
-    initFirebase();
-    
-    // 强制应用排序（延迟执行确保DOM加载完成）
-    setTimeout(() => {
-        console.log('强制刷新排序');
+        loadLocalData();
         render();
-    }, 500);
-    
-    setTimeout(() => {
-        console.log('再次强制刷新排序');
-        render();
-    }, 1000);
-    
-    autoSyncInterval = setInterval(() => {
-        if (firebaseLoaded && !syncInProgress) {
-            saveToCloud();
-        }
-    }, 3 * 60 * 1000);
-};
+        renderStockSummary();
+        initFirebase();
+        
+        autoSyncInterval = setInterval(() => {
+            if (firebaseLoaded && !syncInProgress) {
+                saveToCloud();
+            }
+        }, 3 * 60 * 1000);
+    };
 </script>
 </body>
 </html>
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
